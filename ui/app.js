@@ -5,6 +5,7 @@ const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const island = $('#island'), glow = $('#glow'), stackEl = $('#stack'), stackList = $('#stack-list'), stackHead = $('#stack-head');
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // ------------------------------------------------------------ icons
 const S = 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
@@ -627,6 +628,7 @@ const THEMES = {
   water: { name: 'Water', pal: ['#0b5fd6', '#1aa6e8', '#5fe0e6'] },
   lava: { name: 'Lava', pal: ['#e02a0c', '#ff7a18', '#ffd24a'] },
   ice: { name: 'Ice', pal: ['#5aa9e6', '#9fd3f7', '#e9f6ff'] },
+  jarvis: { name: 'J.A.R.V.I.S.', pal: ['#087f9d', '#28d8ec', '#a5f6ff'] },
 };
 const palette = DEFAULT_PAL;
 let lookNow = null, lookDrawn = 'sky';
@@ -891,6 +893,58 @@ function paintLiquid(g, t, x0, x1, W, A, P) {
 }
 const PAINT = {
   sky: paintSky,
+  // A restrained holographic instrument panel: fine graph lines, twin reticles and a slow scanner.
+  // It stays inside the existing pill so the theme never obscures the desktop or its controls.
+  jarvis(g, t, dt, x0, x1, W, A) {
+    const left = Math.ceil(x0), right = Math.floor(x1);
+    g.save();
+    g.globalAlpha = A;
+    g.lineWidth = 0.55;
+    g.strokeStyle = 'rgba(83, 221, 242, .12)';
+    g.beginPath();
+    for (let x = left + 5; x < right; x += 12) { g.moveTo(x, 5); g.lineTo(x, SKY_H - 5); }
+    g.moveTo(left + 5, SKY_H / 2); g.lineTo(right - 5, SKY_H / 2);
+    g.stroke();
+
+    const reticle = (cx, cy, r, phase) => {
+      g.save();
+      g.translate(cx, cy);
+      g.strokeStyle = 'rgba(107, 235, 250, .38)';
+      g.lineWidth = 0.75;
+      g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.stroke();
+      g.globalAlpha = A * 0.72;
+      g.setLineDash([1.5, 2.8]);
+      g.beginPath(); g.arc(0, 0, r - 2.5, 0, Math.PI * 2); g.stroke();
+      g.setLineDash([]);
+      g.rotate(phase);
+      g.strokeStyle = 'rgba(117, 243, 255, .82)';
+      g.beginPath();
+      g.moveTo(0, -r - 1); g.lineTo(0, -r + 2.2);
+      g.moveTo(0, r - 2.2); g.lineTo(0, r + 1);
+      g.moveTo(-r - 1, 0); g.lineTo(-r + 2.2, 0);
+      g.moveTo(r - 2.2, 0); g.lineTo(r + 1, 0);
+      g.stroke();
+      g.fillStyle = '#8bf5ff';
+      g.shadowColor = '#22d9f2'; g.shadowBlur = 5;
+      g.beginPath(); g.arc(0, 0, 1, 0, Math.PI * 2); g.fill();
+      g.restore();
+    };
+    const cy = SKY_H / 2;
+    reticle(left + 14, cy, 6.2, reducedMotion ? 0 : t * 0.00032);
+    if (W > 112) reticle(right - 14, cy, 6.2, reducedMotion ? 0 : -t * 0.00024);
+
+    // A fine scan glides along the capsule edge; it is deliberately faint beneath text and controls.
+    const span = Math.max(1, W - 20), scanX = reducedMotion ? left + W / 2 : left + 10 + ((t * 0.022) % span);
+    const beam = g.createLinearGradient(scanX - 13, 0, scanX + 13, 0);
+    beam.addColorStop(0, 'rgba(40,216,236,0)');
+    beam.addColorStop(0.5, 'rgba(93,239,255,.36)');
+    beam.addColorStop(1, 'rgba(40,216,236,0)');
+    g.globalAlpha = A * (reducedMotion ? 0.3 : 0.55 + 0.2 * Math.sin(t * 0.001));
+    g.fillStyle = beam;
+    g.fillRect(scanX - 13, 3, 26, 1);
+    g.fillRect(scanX - 9, SKY_H - 4, 18, 0.7);
+    g.restore();
+  },
   // a dark galaxy: clouds of magenta and violet drifting over black, a few stars
   nebula(g, t, dt, x0, x1, W, A) {
     g.globalAlpha = A; g.fillStyle = '#08030f'; g.fillRect(x0, 0, W, SKY_H);
@@ -1175,6 +1229,7 @@ function frame(t) {
   requestAnimationFrame(frame);
   const playing = st.media.playing && musicOn();
   const look = st.skin !== 'black' ? st.skin : playing && st.visuals && st.react ? 'sky' : null;      // one theme for everything; plain black gets the night sky while music plays
+  document.body.classList.toggle('jarvis', look === 'jarvis');
   if (look !== lookNow) {
     if (look && lookNow) skyA = Math.min(skyA, 0.2);       // one skin gives way to another: fade the new one in
     lookNow = look; applyPal();
@@ -1803,7 +1858,7 @@ const SETTINGS_UI = [
   ['seg', 'calendar', 'Date', [['gregorian', 'Greg.'], ['shamsi', 'Shamsi'], ['shamsi-fa', 'شمسی'], ['both', 'Both']]],
   ['toggle', 'autoHide', 'Hide while a window is underneath'],
   ['toggle', 'hideVideo', 'Stay out of the way for videos'],
-  ['swatch', 'skin', 'Theme', ['black', 'nebula', 'crystal', 'ember', 'reactor', 'venom']],        // cloud, water, lava and ice are parked until they are finished
+  ['swatch', 'skin', 'Theme', ['black', 'nebula', 'crystal', 'ember', 'reactor', 'venom', 'jarvis']], // cloud, water, lava and ice are parked until they are finished
   ['toggle', 'musicReact', 'Theme reacts to music'],
   ['toggle', 'visuals', 'Night sky with music (black theme)'],
   ['step', 'notifSeconds', 'Notification stays for', 2, 10, 's'],
@@ -1852,7 +1907,7 @@ function renderSettings() {
       row.appendChild(seg);
     } else if (type === 'swatch') {
       const now = s[key] || a[0];
-      const name = document.createElement('span'); name.className = 'dim swn'; name.textContent = now === 'sky' ? 'Cover colours' : now === 'black' ? 'Black' : THEMES[now].name;
+      const name = document.createElement('span'); name.className = 'dim swn'; name.textContent = now === 'sky' ? 'Cover colours' : now === 'black' ? 'Black' : (THEMES[now] || THEMES.black).name;
       const box = document.createElement('div'); box.className = 'sws';
       for (const val of a) {
         const bt = document.createElement('button'); bt.className = 'sw-' + val + (val === now ? ' on' : '');
@@ -1896,7 +1951,7 @@ const TOUR = [
   ['clipboard', 'Clipboard history', 'Everything you copied, with images and pins', 'clips'],
   ['key', 'Passwords', 'Makes one, asks what it is for, keeps it encrypted', 'vault'],
   ['timer', 'Timer', 'Stays in sight while it runs', 'timer'],
-  ['gear', 'Themes and settings', 'Liquid skins, Venom, and every switch', 'settings'],
+  ['gear', 'Themes and settings', 'Liquid skins, J.A.R.V.I.S., Venom, and every switch', 'settings'],
 ];
 function renderTour() {
   $('#stack-clear').classList.add('hidden');
@@ -1963,7 +2018,7 @@ const applySettings = (s) => {
   st.deviceAlerts = s.deviceAlerts !== false;
   st.shelfOn = s.shelf !== false;
   st.visuals = s.visuals !== false;
-  st.skin = ['nebula', 'crystal', 'ember', 'reactor', 'venom'].includes(s.skin) ? s.skin : 'black';
+  st.skin = ['nebula', 'crystal', 'ember', 'reactor', 'venom', 'jarvis'].includes(s.skin) ? s.skin : 'black';
   st.musicTheme = THEMES[s.musicTheme] ? s.musicTheme : 'sky';
   st.smartCopy = s.smartCopy !== false;
   st.react = s.musicReact !== false;
