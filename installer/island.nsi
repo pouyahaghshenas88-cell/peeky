@@ -62,8 +62,8 @@ Section "Install"
   WriteRegStr HKCU "${UNKEY}" "DisplayVersion" "${VERSION}"
   WriteRegStr HKCU "${UNKEY}" "DisplayIcon" "$INSTDIR\${EXE}"
   WriteRegStr HKCU "${UNKEY}" "InstallLocation" "$INSTDIR"
-  WriteRegStr HKCU "${UNKEY}" "Publisher" "raminturne"
-  WriteRegStr HKCU "${UNKEY}" "URLInfoAbout" "https://github.com/raminturne/peeky"
+  WriteRegStr HKCU "${UNKEY}" "Publisher" "pouyahaghshenas88-cell"
+  WriteRegStr HKCU "${UNKEY}" "URLInfoAbout" "https://github.com/pouyahaghshenas88-cell/peeky"
   WriteRegStr HKCU "${UNKEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
   WriteRegDWORD HKCU "${UNKEY}" "NoModify" 1
   WriteRegDWORD HKCU "${UNKEY}" "NoRepair" 1

@@ -15,9 +15,9 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{GetLastInputInfo, LASTINPUTINF
 
 use crate::{settings, sys};
 
-const BASE: &str = "https://github.com/raminturne/peeky/releases/latest/download";
+const BASE: &str = "https://github.com/pouyahaghshenas88-cell/peeky/releases/latest/download";
 /// The public half of the release-signing key (Ed25519). The private half lives only in the repository's secrets.
-const KEY: [u8; 32] = [63, 0, 60, 214, 100, 167, 237, 223, 180, 217, 239, 181, 141, 177, 76, 130, 3, 62, 67, 79, 23, 72, 155, 50, 58, 132, 111, 212, 124, 162, 222, 128];
+const KEY: [u8; 32] = [156, 159, 54, 219, 29, 74, 223, 19, 228, 215, 215, 24, 174, 23, 66, 142, 35, 114, 45, 56, 90, 109, 158, 66, 179, 24, 73, 174, 65, 115, 225, 158];
 
 static READY: Mutex<Option<(String, PathBuf)>> = Mutex::new(None);
 
