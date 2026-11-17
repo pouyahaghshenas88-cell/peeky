@@ -165,6 +165,8 @@ function render() {
   }
   const w = clamp(Math.ceil(views[cur].offsetWidth), 70, 600);
   if (island.dataset.w !== String(w)) {
+    const prevW = Number(island.dataset.w) || 0;
+    if (prevW >= 68 && w - prevW >= 38) triggerPillShoot(prevW, w);
     island.dataset.w = w;
     island.style.width = w + 'px';
     glow.style.width = w + 50 + 'px'; glow.style.marginLeft = -(w + 50) / 2 + 'px';
@@ -501,6 +503,7 @@ function setStack(open, kind) {
     renderStack();
     stackList.scrollTop = 0;
     stackEl.classList.add('fresh'); clearTimeout(freshT); freshT = setTimeout(() => stackEl.classList.remove('fresh'), 800);
+    triggerStackShoot();
   }
   render();
 }
@@ -629,6 +632,7 @@ const THEMES = {
   lava: { name: 'Lava', pal: ['#e02a0c', '#ff7a18', '#ffd24a'] },
   ice: { name: 'Ice', pal: ['#5aa9e6', '#9fd3f7', '#e9f6ff'] },
   jarvis: { name: 'J.A.R.V.I.S.', pal: ['#087f9d', '#28d8ec', '#a5f6ff'] },
+  spider: { name: 'Spider-Man', pal: ['#D71920', '#1261B5', '#398BE0'] },
 };
 const palette = DEFAULT_PAL;
 let lookNow = null, lookDrawn = 'sky';
@@ -1201,12 +1205,689 @@ function drawIce(t, dt, on, live) {
   if (live && bass > 0.3) for (let k = 0; k < 3; k++) { f.globalAlpha = bass; sparkle(f, x0 + 12 + ((k * 0.37 + t * 0.0002) % 1) * (W - 24), 13 + k * 9, 3 + bass * 4); }
   f.globalAlpha = 1;
 }
+// ------------------------------------------------------------ Spider-Man: suit weave, 3D silk webs, hanging spider & web-shoot
+const FX_W = 700, FX_SP_H = 360;
+let spPat = null, spDot = null, spOn = false, spExp = 0, spMx = 0, spMy = 0, spMa = 0, spPulse = 0, spBeatAt = 0;
+let spCurX = -999, spCurY = -999, spCvx = 0, spCvy = 0, spCurAt = 0, spCssAt = 0, spPrevW = 84;
+const spStrands = Array.from({ length: 5 }, () => ({ x: 0, y: 0, vx: 0, vy: 0 }));
+const spBug = { ax: 382, ay: 43.4, th: 0.04, om: 0, len: 24, to: 25, reel: 0, at: 0, leg: 0, legA: 0, ready: false };
+const spShoot = { at: -9999, fromW: 84, toW: 360, dur: 520 };
+const spStackShoot = { at: -9999, dur: 560 };
+
+function triggerPillShoot(fromW, toW, dur) {
+  if (st.skin !== 'spider' || reducedMotion || st.tucked) return;
+  const now = performance.now();
+  if (!dur && now - spShoot.at < 240 && toW <= spShoot.toW + 24) { spShoot.toW = Math.max(spShoot.toW, toW); return; }
+  spShoot.at = now; spShoot.fromW = clamp(fromW, 70, 520); spShoot.toW = clamp(toW, 120, 600); spShoot.dur = dur || 540;
+  for (let i = 0; i < spStrands.length; i++) spStrands[i].vy += (i % 2 ? 24 : -18);
+}
+function triggerStackShoot(dur) {
+  if (st.skin !== 'spider' || reducedMotion || st.tucked) return;
+  spStackShoot.at = performance.now(); spStackShoot.dur = dur || 580;
+}
+function ensureSpPatterns(g) {
+  if (spPat) return;
+  // Tactile hexagonal Spider-Man suit micro-weave (built once, zero per-frame pixel cost)
+  const c = document.createElement('canvas'); c.width = 12; c.height = 20;
+  const x = c.getContext('2d');
+  x.strokeStyle = 'rgba(16,27,50,.18)'; x.lineWidth = 0.65;
+  x.beginPath();
+  x.moveTo(6, 0); x.lineTo(12, 3.5); x.lineTo(12, 10); x.lineTo(6, 13.5); x.lineTo(0, 10); x.lineTo(0, 3.5); x.closePath();
+  x.moveTo(6, 13.5); x.lineTo(6, 20); x.moveTo(0, 10); x.lineTo(0, 16.5); x.lineTo(6, 20); x.lineTo(12, 16.5); x.lineTo(12, 10);
+  x.stroke();
+  x.fillStyle = 'rgba(255,255,255,.07)';
+  x.beginPath(); x.arc(6, 6.2, 0.75, 0, 6.283); x.arc(0, 16.2, 0.75, 0, 6.283); x.arc(12, 16.2, 0.75, 0, 6.283); x.fill();
+  spPat = g.createPattern(c, 'repeat');
+  // Restrained Pop-Art Ben-Day micro-halftone
+  const d = document.createElement('canvas'); d.width = 7; d.height = 7;
+  const dx = d.getContext('2d');
+  dx.fillStyle = '#FFFFFF';
+  dx.beginPath(); dx.arc(1.75, 1.75, 0.8, 0, 6.283); dx.arc(5.25, 5.25, 0.8, 0, 6.283); dx.fill();
+  spDot = g.createPattern(d, 'repeat');
+}
+function spWebFan(g, ox, oy, rMax, a0, a1, spokes, rings, pull) {
+  g.beginPath();
+  for (let i = 0; i <= spokes; i++) {
+    const a = a0 + (a1 - a0) * (i / spokes);
+    g.moveTo(ox, oy); g.lineTo(ox + Math.cos(a) * rMax, oy + Math.sin(a) * rMax);
+  }
+  for (let k = 1; k <= rings; k++) {
+    const r = rMax * (k / rings);
+    for (let i = 0; i < spokes; i++) {
+      const p0 = a0 + (a1 - a0) * (i / spokes), p1 = a0 + (a1 - a0) * ((i + 1) / spokes);
+      const ax = ox + Math.cos(p0) * r, ay = oy + Math.sin(p0) * r;
+      const bx = ox + Math.cos(p1) * r, by = oy + Math.sin(p1) * r;
+      const mx = (ax + bx) * 0.5, my = (ay + by) * 0.5;
+      if (i === 0) g.moveTo(ax, ay);
+      g.quadraticCurveTo(mx + (ox - mx) * pull, my + (oy - my) * pull, bx, by);
+    }
+  }
+  g.stroke();
+}
+function updateSpCursor(t, dt) {
+  const winW = window.innerWidth || FX_W;
+  const has = !reducedMotion && st.cx !== undefined && st.cx > -40 && st.cx < winW + 40 && st.cy > -40 && st.cy < 420;
+  const tx = has ? clamp((st.cx - winW * 0.5) / 220, -1, 1) : 0;
+  const ty = has ? clamp((st.cy - 36) / 170, -1, 1) : 0;
+  const dist = has ? Math.hypot(st.cx - winW * 0.5, Math.max(0, st.cy - 26)) : 999;
+  const ta = has ? clamp(1 - dist / 320, 0, 1) : 0;
+  const k = Math.min(1, dt * 8);
+  spMx += (tx - spMx) * k; spMy += (ty - spMy) * k; spMa += (ta - spMa) * k;
+  spCvx *= Math.pow(0.02, dt); spCvy *= Math.pow(0.02, dt);
+  if (t - spCssAt > 32) {
+    spCssAt = t;
+    const bs = document.body.style, W = Math.max(70, island.clientWidth);
+    const rx = has ? clamp((st.cx - (winW * 0.5 - W * 0.5)) / W * 100, 0, 100) : 50;
+    const ry = has ? clamp((st.cy - 8) / SKY_H * 100, 0, 100) : 25;
+    bs.setProperty('--sp-mx', rx.toFixed(1) + '%');
+    bs.setProperty('--sp-my', ry.toFixed(1) + '%');
+    bs.setProperty('--sp-ma', spMa.toFixed(2));
+    bs.setProperty('--sp-px', (-spMx * 3.5).toFixed(1) + 'px');
+    bs.setProperty('--sp-py', (-spMy * 2.5).toFixed(1) + 'px');
+    if (st.stackOpen && has) {
+      bs.setProperty('--sp-sx', clamp((st.cx - (winW * 0.5 - 208)) / 416 * 100, 0, 100).toFixed(1) + '%');
+      bs.setProperty('--sp-sy', clamp((st.cy - 52) / 280 * 100, 0, 100).toFixed(1) + '%');
+    }
+  }
+}
+PAINT.spider = (g, t, dt, x0, x1, W, A) => {
+  ensureSpPatterns(g);
+  updateSpCursor(t, dt);
+  const wantExp = cur === 'idle' ? 0 : 1;
+  spExp += (wantExp - spExp) * Math.min(1, reducedMotion ? 1 : dt * 8.5);
+  if (bass - bassSlow > 0.12 && t - spBeatAt > 360) { spBeatAt = t; spPulse = 1; }
+  spPulse *= Math.pow(0.03, dt);
+  const mid = (x0 + x1) * 0.5;
+  let hiE = 0; for (let i = 10; i < 22; i++) hiE += levels[i]; hiE /= 12;
+
+  // 1) Collapsed pill: classic #D71920 mask surface, #174A85 lower-flank suit weave, embossed #8F1018 webbing & #F04449 crown light
+  if (spExp < 0.99) {
+    const cA = A * (1 - spExp);
+    g.save();
+    g.globalAlpha = cA;
+    // Crimson suit base with rich 3D vertical curvature
+    const base = g.createLinearGradient(0, 0, 0, SKY_H);
+    base.addColorStop(0, '#E2232A'); base.addColorStop(0.55, '#D71920'); base.addColorStop(1, '#8F1018');
+    g.fillStyle = base; g.fillRect(x0, 0, W, SKY_H);
+
+    // Classic #174A85 suit blue lower-outer crescents cradling the crimson mask (#D71920 + #174A85 suit blend)
+    const flankR = clamp(W * 0.31, 24, 34);
+    for (const bx of [x0 - 2, x1 + 2]) {
+      const sg = g.createRadialGradient(bx, SKY_H + 2, 2, bx, SKY_H + 2, flankR);
+      sg.addColorStop(0, 'rgba(23,74,133,.88)');
+      sg.addColorStop(0.56, 'rgba(23,74,133,.44)');
+      sg.addColorStop(0.82, 'rgba(143,16,24,.22)');
+      sg.addColorStop(1, 'rgba(215,25,32,0)');
+      g.fillStyle = sg; g.fillRect(x0, 0, W, SKY_H);
+    }
+
+    // Tactile hex suit fabric weave (parallax plane 1)
+    g.save();
+    g.translate(-spMx * 1.8, -spMy * 1.0);
+    g.globalAlpha = cA * 0.9; g.fillStyle = spPat;
+    g.fillRect(x0 - 4, -4, W + 8, SKY_H + 8);
+    g.restore();
+
+    // Soft #F04449 3D dome crown highlight (26-35% alpha, responsive to cursor & beat)
+    const hx = mid + spMx * 6.5, hy = 6 + spMy * 2.2, hr = W * 0.58;
+    const hg = g.createRadialGradient(hx, hy, 1, hx, hy + 1, hr);
+    hg.addColorStop(0, `rgba(240,68,73,${clamp(0.33 + bass * 0.12, 0.22, 0.42).toFixed(3)})`);
+    hg.addColorStop(1, 'rgba(240,68,73,0)');
+    g.globalAlpha = cA; g.fillStyle = hg; g.fillRect(x0, 0, W, SKY_H);
+
+    // Restrained Pop-Art Ben-Day halftone accent on upper-left crown
+    g.save();
+    g.translate(-spMx * 1.1, -spMy * 0.6);
+    g.globalAlpha = cA * 0.068; g.fillStyle = spDot;
+    g.fillRect(x0, 0, W * 0.45, SKY_H * 0.52);
+    g.restore();
+
+    // Embossed 3D classic Spider-Man mask webbing radiating from between the lenses (parallax plane 2)
+    const wx = mid - spMx * 2.5, wy = SKY_H * 0.56 - spMy * 1.3, wr = Math.max(W * 0.66, 58);
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    g.globalAlpha = cA * 0.30; g.strokeStyle = '#F04449'; g.lineWidth = 0.68;
+    spWebFan(g, wx, wy - 0.6, wr, 0, Math.PI * 2, 12, 4, 0.24);
+    g.globalAlpha = cA * 0.45; g.strokeStyle = '#8F1018'; g.lineWidth = 0.85;
+    spWebFan(g, wx, wy, wr, 0, Math.PI * 2, 12, 4, 0.24);
+    g.restore();
+  }
+
+  // 2) Expanded pill: diagonal #D71920 -> #8F1018 -> #174A85 -> #1261B5 gradient, cinematic #101B32 depth & subtle 6% white web
+  if (spExp > 0.01) {
+    const eA = A * spExp, shift = spMx * 10;
+    g.save();
+    g.globalAlpha = eA;
+    const dg = g.createLinearGradient(x0 - 4 + shift, -4, x1 + 4 + shift, SKY_H + 6);
+    dg.addColorStop(0, '#D71920');
+    dg.addColorStop(0.29, '#8F1018');
+    dg.addColorStop(0.58, '#174A85');
+    dg.addColorStop(1, '#1261B5');
+    g.fillStyle = dg; g.fillRect(x0, 0, W, SKY_H);
+
+    // Cinematic deep shadow #101B32 (35-45%) preserving vibrant red/blue balance & AAA foreground readability
+    const sh = g.createLinearGradient(0, 0, 0, SKY_H);
+    sh.addColorStop(0, 'rgba(16,27,50,.20)'); sh.addColorStop(0.58, 'rgba(16,27,50,.35)'); sh.addColorStop(1, 'rgba(16,27,50,.46)');
+    g.fillStyle = sh; g.fillRect(x0, 0, W, SKY_H);
+
+    // Ambient red (#F04449) & blue (#398BE0) cinematic glows (16-22% at rest, gently reactive to music)
+    const breath = reducedMotion ? 0 : Math.sin(t * 0.0012) * 0.025;
+    const rcx = x0 + W * (0.20 + (reducedMotion ? 0 : Math.sin(t * 0.0007) * 0.04)) + spMx * 5;
+    const rg = g.createRadialGradient(rcx, SKY_H * 0.35, 2, rcx, SKY_H * 0.4, W * 0.42);
+    rg.addColorStop(0, `rgba(240,68,73,${clamp(0.19 + breath + bass * 0.17, 0.15, 0.36).toFixed(3)})`);
+    rg.addColorStop(1, 'rgba(240,68,73,0)');
+    g.fillStyle = rg; g.fillRect(x0, 0, W, SKY_H);
+
+    const bcx = x0 + W * (0.80 + (reducedMotion ? 0 : Math.cos(t * 0.0008) * 0.04)) + spMx * 5;
+    const bg = g.createRadialGradient(bcx, SKY_H * 0.62, 2, bcx, SKY_H * 0.55, W * 0.44);
+    bg.addColorStop(0, `rgba(57,139,224,${clamp(0.20 - breath + hiE * 0.18, 0.15, 0.38).toFixed(3)})`);
+    bg.addColorStop(1, 'rgba(57,139,224,0)');
+    g.fillStyle = bg; g.fillRect(x0, 0, W, SKY_H);
+
+    // Music spectrum silk wave gliding along the bottom when a track drives the pill
+    if (energy > 0.018 && !reducedMotion) {
+      const wg = g.createLinearGradient(x0, 0, x1, 0);
+      wg.addColorStop(0, 'rgba(240,68,73,.26)'); wg.addColorStop(0.5, 'rgba(232,237,245,.18)'); wg.addColorStop(1, 'rgba(57,139,224,.28)');
+      g.fillStyle = wg; g.beginPath(); g.moveTo(x0, SKY_H);
+      const steps = 16;
+      for (let i = 0; i <= steps; i++) {
+        const q = i / steps, px = x0 + q * W;
+        const lv = levels[clamp(Math.floor(q * (NB - 1)), 0, NB - 1)];
+        const py = SKY_H - 2 - lv * 13 * Math.sin(q * Math.PI);
+        g.lineTo(px, py);
+      }
+      g.lineTo(x1, SKY_H); g.closePath(); g.fill();
+    }
+
+    // Subtle Pop-Art micro-halftone restricted to the extreme red & blue corners (5% alpha)
+    g.save();
+    g.translate(-spMx * 1.4, -spMy * 0.8);
+    g.globalAlpha = eA * 0.052; g.fillStyle = spDot;
+    const hw = Math.min(54, W * 0.2);
+    g.fillRect(x0, 0, hw, SKY_H); g.fillRect(x1 - hw, 0, hw, SKY_H);
+    g.restore();
+
+    // Whisper-fine spider-web lines (#FFFFFF at 6-7% alpha, brightening gently on a beat)
+    const wAlpha = clamp(0.068 + spPulse * 0.085, 0.05, 0.16);
+    g.globalAlpha = eA * wAlpha; g.strokeStyle = '#FFFFFF'; g.lineWidth = 0.72;
+    const fanR = clamp(W * 0.28, 44, 96);
+    spWebFan(g, x0 + 4 - spMx * 3.2, 2 - spMy * 1.6, fanR, -0.05, Math.PI * 0.58, 5, 3, 0.24);
+    spWebFan(g, x1 - 4 - spMx * 3.2, SKY_H - 2 - spMy * 1.6, fanR * 0.9, Math.PI - 0.05, Math.PI * 1.58, 5, 3, 0.24);
+    g.restore();
+  }
+
+  // 3) Controlled interactive cursor rim light (red on left, white crest, blue on right)
+  if (spMa > 0.02) {
+    const winW = window.innerWidth || FX_W;
+    const lx = clamp(x0 + (st.cx - (winW * 0.5 - W * 0.5)), x0, x1);
+    const side = clamp((lx - x0) / Math.max(1, W), 0, 1);
+    const col = side < 0.5 ? '240,68,73' : '57,139,224';
+    const lg = g.createRadialGradient(lx, 4, 0, lx, 10, 56);
+    lg.addColorStop(0, `rgba(${col},${(0.14 * spMa).toFixed(3)})`);
+    lg.addColorStop(1, `rgba(${col},0)`);
+    g.globalAlpha = A; g.fillStyle = lg; g.fillRect(lx - 56, 0, 112, SKY_H);
+  }
+};
+
+// 3D quadratic silk helper: soft #101B32 drop shadow + physical strand + traveling #FFFFFF specular glint
+function spSilk(g, x0, y0, cx, cy, x1, y1, col, lw, shA, glint) {
+  if (shA > 0.01) {
+    g.strokeStyle = `rgba(16,27,50,${shA.toFixed(3)})`; g.lineWidth = lw + 0.65;
+    g.beginPath(); g.moveTo(x0 + 0.45, y0 + 1.1); g.quadraticCurveTo(cx + 0.45, cy + 1.15, x1 + 0.45, y1 + 1.1); g.stroke();
+  }
+  g.strokeStyle = col; g.lineWidth = lw;
+  g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(cx, cy, x1, y1); g.stroke();
+  if (glint > 0 && glint < 1) {
+    const pt = (u) => { const v = 1 - u; return [v * v * x0 + 2 * v * u * cx + u * u * x1, v * v * y0 + 2 * v * u * cy + u * u * y1]; };
+    const [ax, ay] = pt(clamp(glint - 0.11, 0.08, 0.80)), [bx, by] = pt(clamp(glint + 0.11, 0.20, 0.92));
+    const [mx, my] = pt(clamp(glint, 0.14, 0.86));
+    g.strokeStyle = 'rgba(255,255,255,.92)'; g.lineWidth = Math.max(0.55, lw * 0.82);
+    g.beginPath(); g.moveTo(ax, ay); g.quadraticCurveTo(mx, my, bx, by); g.stroke();
+  }
+}
+// Partial quadratic Bezier [0..u] via De Casteljau subdivision (for smooth curved web-shoot strands)
+function spQuadPart(g, x0, y0, cx, cy, x1, y1, u, withTip) {
+  const m0x = x0 + (cx - x0) * u, m0y = y0 + (cy - y0) * u;
+  const m1x = cx + (x1 - cx) * u, m1y = cy + (y1 - cy) * u;
+  const ex = m0x + (m1x - m0x) * u, ey = m0y + (m1y - m0y) * u;
+  g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(m0x, m0y, ex, ey); g.stroke();
+  return withTip ? [ex, ey, m0x, m0y] : null;
+}
+const spQPt = (x0, y0, cx, cy, x1, y1, u) => {
+  const v = 1 - u;
+  return [v * v * x0 + 2 * v * u * cx + u * u * x1, v * v * y0 + 2 * v * u * cy + u * u * y1];
+};
+function spScallop(g, ox, oy, ax, ay, bx, by, pull, col, lw, shA) {
+  const mx = (ax + bx) * 0.5, my = (ay + by) * 0.5;
+  spSilk(g, ax, ay, mx + (ox - mx) * pull, my + (oy - my) * pull, bx, by, col, lw, shA, -1);
+}
+function spSpring(s, nx, ny, fxCx, dt, pluck) {
+  const winW = window.innerWidth || FX_W;
+  if (!reducedMotion && st.cx !== undefined) {
+    const mx = st.cx - winW * 0.5 + fxCx, my = st.cy;
+    const dx = mx - nx, dy = my - ny, d = Math.hypot(dx, dy);
+    if (d < 46 && d > 0.5) {
+      const f = (1 - d / 46) * (1 - d / 46);
+      // gentle magnetic silk pull + cursor-breeze deflection
+      s.vx += (dx * 0.55 + clamp(spCvx, -260, 260) * 0.14) * f * dt * 16;
+      s.vy += (dy * 0.55 + clamp(spCvy, -260, 260) * 0.14) * f * dt * 16;
+    }
+  }
+  if (pluck) s.vy += pluck;
+  s.vx += (-135 * s.x - 10.5 * s.vx) * dt;
+  s.vy += (-135 * s.y - 10.5 * s.vy) * dt;
+  s.x = clamp(s.x + s.vx * dt, -6, 6);
+  s.y = clamp(s.y + s.vy * dt, -6, 6);
+}
+// Sleek 3D architectural Spider-Man emblem spider hanging upside-down (#171A22 + subtle #FFFFFF specular highlights)
+function paintLittleSpider(g, x, y, rot, legPh, legA, lightX) {
+  const legs = [
+    [-2.5, -7.2, -4.8, -3.2, 0.55],
+    [-6.2, -2.8, -5.5, -0.4, 1.05],
+    [-6.0, 3.6,  -5.3, 1.7,  1.65],
+    [-2.6, 7.6,  -4.6, 4.0,  2.15],
+  ];
+  const traceSegs = (fn) => {
+    for (let side = -1; side <= 1; side += 2) {
+      for (let i = 0; i < 4; i++) {
+        const [fx, fy, kx, ky, ry] = legs[i];
+        const w = Math.sin(legPh + i * 1.5 + (side > 0 ? 3.14 : 0)) * legA;
+        fn(side * 1.15, ry, side * kx, ky + w * 0.55, side * (fx + w * 0.22), fy + w * 1.05);
+      }
+    }
+  };
+  g.save();
+  g.translate(x, y);
+  g.rotate(rot);
+  g.lineCap = 'round'; g.lineJoin = 'round';
+
+  // Soft 3D floating drop shadow (detaches spider crisply on both bright & dark desktops)
+  g.save();
+  g.translate(0.95, 1.65);
+  g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = 1.0;
+  g.beginPath(); traceSegs((rx, ry, kx, ky, fx, fy) => { g.moveTo(rx, ry); g.lineTo(kx, ky); g.lineTo(fx, fy); }); g.stroke();
+  g.fillStyle = 'rgba(0,0,0,.30)';
+  g.beginPath(); g.ellipse(0, -1.8, 2.35, 3.2, 0, 0, 6.283); g.ellipse(0, 2.2, 1.65, 1.85, 0, 0, 6.283); g.fill();
+  g.restore();
+
+  // Tapered articulated legs in #171A22 with delicate #FFFFFF upper bevel highlights
+  g.strokeStyle = '#171A22'; g.lineWidth = 1.02;
+  g.beginPath(); traceSegs((rx, ry, kx, ky) => { g.moveTo(rx, ry); g.lineTo(kx, ky); }); g.stroke();
+  g.lineWidth = 0.72;
+  g.beginPath(); traceSegs((_, __, kx, ky, fx, fy) => { g.moveTo(kx, ky); g.lineTo(fx, fy); }); g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,.32)'; g.lineWidth = 0.36;
+  g.beginPath(); traceSegs((rx, ry, kx, ky, fx, fy) => {
+    g.moveTo(rx, ry - 0.22); g.lineTo(kx, ky - 0.24); g.lineTo((kx + fx) * 0.5, (ky + fy) * 0.5 - 0.18);
+  }); g.stroke();
+
+  // Sleek front pedipalps
+  g.strokeStyle = '#171A22'; g.lineWidth = 0.62;
+  g.beginPath(); g.moveTo(-0.65, 3.7); g.lineTo(-0.95, 4.8); g.moveTo(0.65, 3.7); g.lineTo(0.95, 4.8); g.stroke();
+
+  // 3D sculpted classic abdomen (#171A22 with moving directional highlight & #FFFFFF rim reflection)
+  const ag = g.createRadialGradient(-0.85 + lightX * 0.7, -2.8, 0.2, 0, -1.7, 3.7);
+  ag.addColorStop(0, '#343B4A'); ag.addColorStop(0.48, '#171A22'); ag.addColorStop(1, '#0C0E14');
+  g.fillStyle = ag;
+  g.beginPath();
+  g.moveTo(0, -5.1);
+  g.bezierCurveTo(2.15, -3.9, 2.75, -1.2, 1.85, 0.55);
+  g.quadraticCurveTo(0, 1.15, -1.85, 0.55);
+  g.bezierCurveTo(-2.75, -1.2, -2.15, -3.9, 0, -5.1);
+  g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(255,255,255,.26)'; g.lineWidth = 0.42; g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,.72)'; g.lineWidth = 0.52;
+  g.beginPath(); g.moveTo(-1.1 + lightX * 0.2, -3.5); g.quadraticCurveTo(-1.78 + lightX * 0.2, -1.9, -1.25 + lightX * 0.15, -0.45); g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,.20)'; g.lineWidth = 0.38;
+  g.beginPath(); g.moveTo(0, -3.6); g.lineTo(0, -0.5); g.stroke();
+
+  // 3D sculpted cephalothorax (#171A22 + crisp #FFFFFF specular crest)
+  const cg = g.createRadialGradient(-0.55 + lightX * 0.5, 1.5, 0.15, 0, 2.2, 2.1);
+  cg.addColorStop(0, '#323948'); cg.addColorStop(0.54, '#171A22'); cg.addColorStop(1, '#0B0D12');
+  g.fillStyle = cg;
+  g.beginPath();
+  g.moveTo(0, 0.35);
+  g.bezierCurveTo(1.75, 0.65, 1.95, 2.85, 0.95, 3.9);
+  g.quadraticCurveTo(0, 4.25, -0.95, 3.9);
+  g.bezierCurveTo(-1.95, 2.85, -1.75, 0.65, 0, 0.35);
+  g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(255,255,255,.24)'; g.lineWidth = 0.4; g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,.68)'; g.lineWidth = 0.48;
+  g.beginPath(); g.moveTo(-0.85 + lightX * 0.15, 1.25); g.quadraticCurveTo(-1.2 + lightX * 0.15, 2.2, -0.8 + lightX * 0.15, 3.05); g.stroke();
+  g.restore();
+}
+// Web-shoot expansion animation (Section 7): silk shoots from the collapsed pill, fans out, weaves & forms the opened panel
+function drawPillWebShoot(g, now, cx, curW) {
+  const el = now - spShoot.at;
+  if (el < 0 || el >= spShoot.dur) return;
+  const p = el / spShoot.dur;
+  const shoot = 1 - Math.pow(1 - clamp(p / 0.42, 0, 1), 3);       // fast initial sling
+  const webK = clamp((p - 0.12) / 0.40, 0, 1);                    // cross-webs stretch taut
+  const fade = p < 0.56 ? 1 : 1 - Math.pow((p - 0.56) / 0.44, 1.6);
+  const twang = Math.sin(p * 26) * (1 - p) * 2.1;
+  const fHalf = spShoot.fromW * 0.44, tHalf = Math.max(curW * 0.5, spShoot.toW * 0.5);
+
+  g.save();
+  g.lineCap = 'round'; g.lineJoin = 'round';
+
+  // Directional red (#F04449 25%) & blue (#398BE0 25%) kinetic glows riding the expanding web fronts
+  for (const dir of [-1, 1]) {
+    const gx = cx + dir * (fHalf + (tHalf - fHalf + 14) * shoot);
+    const rg = g.createRadialGradient(gx, 26, 1, gx, 26, 42);
+    const col = dir < 0 ? '240,68,73' : '57,139,224';
+    rg.addColorStop(0, `rgba(${col},${(0.26 * fade).toFixed(3)})`);
+    rg.addColorStop(1, `rgba(${col},0)`);
+    g.fillStyle = rg; g.fillRect(gx - 42, 0, 84, 62);
+  }
+
+  for (const dir of [-1, 1]) {
+    const ox = cx + dir * fHalf;
+    // 3 primary silk lines (#E8EDF5 88%) + 2 secondary blue-tinted strands (#398BE0 44%) fanning outward
+    const rays = [
+      [ox, 16, cx + dir * ((fHalf + tHalf) * 0.55), 5 - twang, cx + dir * (tHalf + 24), 1, true],
+      [ox, 26, cx + dir * ((fHalf + tHalf) * 0.58), 24 + twang * 0.8, cx + dir * (tHalf + 30), 25, true],
+      [ox, 36, cx + dir * ((fHalf + tHalf) * 0.55), 47 + twang, cx + dir * (tHalf + 22), 54, true],
+      [ox, 21, cx + dir * ((fHalf + tHalf) * 0.52), 14 + twang * 0.5, cx + dir * (tHalf + 18), 12, false],
+      [ox, 31, cx + dir * ((fHalf + tHalf) * 0.52), 38 - twang * 0.5, cx + dir * (tHalf + 18), 40, false],
+    ];
+    for (const [x0, y0, mx, my, x1, y1, main] of rays) {
+      if (main) {
+        g.strokeStyle = `rgba(16,27,50,${(0.32 * fade).toFixed(3)})`; g.lineWidth = 1.9;
+        spQuadPart(g, x0, y0 + 1.1, mx, my + 1.1, x1, y1 + 1.1, shoot, false);
+        g.strokeStyle = `rgba(232,237,245,${(0.90 * fade).toFixed(3)})`; g.lineWidth = 1.15;
+        const tip = spQuadPart(g, x0, y0, mx, my, x1, y1, shoot, true);
+        // Pure #FFFFFF tapered leading sheen + twin forked micro-anchor silk wisps
+        if (tip && p < 0.76) {
+          const [tx, ty, m0x, m0y] = tip;
+          const dx = tx - m0x, dy = ty - m0y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
+          g.strokeStyle = `rgba(255,255,255,${(0.96 * fade).toFixed(3)})`; g.lineWidth = 1.25;
+          g.beginPath(); g.moveTo(tx - ux * 12, ty - uy * 12); g.lineTo(tx, ty); g.stroke();
+          g.strokeStyle = `rgba(255,255,255,${(0.68 * fade).toFixed(3)})`; g.lineWidth = 0.58;
+          g.beginPath();
+          g.moveTo(tx - ux * 2.5, ty - uy * 2.5); g.lineTo(tx + ux * 4.2 - uy * 2.5, ty + uy * 4.2 + ux * 2.5);
+          g.moveTo(tx - ux * 2.5, ty - uy * 2.5); g.lineTo(tx + ux * 3.8 + uy * 2.3, ty + uy * 3.8 - ux * 2.3);
+          g.stroke();
+        }
+      } else {
+        g.strokeStyle = `rgba(57,139,224,${(0.45 * fade).toFixed(3)})`; g.lineWidth = 0.85;
+        spQuadPart(g, x0, y0, mx, my, x1, y1, clamp(shoot * 1.05, 0, 1), false);
+      }
+    }
+    // Scalloped cross-web arcs expanding outward and shaping the capsule edge
+    if (webK > 0.02) {
+      for (let r = 0; r < 3; r++) {
+        const u = (0.34 + r * 0.27) * shoot * (0.55 + 0.45 * webK);
+        if (u < 0.12 || u > 0.98) continue;
+        const p0 = spQPt(...rays[0].slice(0, 6), u);
+        const p1 = spQPt(...rays[1].slice(0, 6), u);
+        const p2 = spQPt(...rays[2].slice(0, 6), u);
+        const col = r === 1 ? `rgba(57,139,224,${(0.44 * fade * webK).toFixed(3)})` : `rgba(232,237,245,${(0.82 * fade * webK).toFixed(3)})`;
+        spScallop(g, ox, 26, p0[0], p0[1], p1[0], p1[1], 0.22, col, r === 1 ? 0.78 : 0.92, 0.22 * fade * webK);
+        spScallop(g, ox, 26, p1[0], p1[1], p2[0], p2[1], 0.22, col, r === 1 ? 0.78 : 0.92, 0.22 * fade * webK);
+      }
+    }
+    // Top & bottom structural capsule silk traces forming the opened pill border
+    const edgeX = cx + dir * (curW * 0.5 - 12);
+    if (Math.abs(edgeX - ox) > 6) {
+      g.strokeStyle = `rgba(255,255,255,${(0.75 * fade).toFixed(3)})`; g.lineWidth = 0.95;
+      g.beginPath();
+      g.moveTo(ox, 8.5); g.quadraticCurveTo((ox + edgeX) * 0.5, 8.5 - twang * 0.4, edgeX, 8.5);
+      g.moveTo(ox, 43.5); g.quadraticCurveTo((ox + edgeX) * 0.5, 43.5 + twang * 0.4, edgeX, 43.5);
+      g.stroke();
+    }
+  }
+  g.restore();
+}
+// Web-cradle shoot when the dropdown stack opens underneath the island
+function drawStackWebShoot(g, now, cx, pillW) {
+  const el = now - spStackShoot.at;
+  if (!st.stackOpen || el < 0 || el >= spStackShoot.dur) return;
+  const p = el / spStackShoot.dur;
+  const shoot = 1 - Math.pow(1 - clamp(p / 0.45, 0, 1), 3);
+  const fade = p < 0.55 ? 1 : 1 - Math.pow((p - 0.55) / 0.45, 1.5);
+  const sH = clamp(stackEl.offsetHeight || 180, 60, 296);
+  const sTop = 52, sBot = Math.min(FX_SP_H - 8, sTop + sH), sHalf = 207;
+  const anchorHalf = Math.min(pillW * 0.42, 165);
+
+  g.save();
+  g.lineCap = 'round';
+  // Controlled red & blue ambient anchor glows as silk slings downward
+  const gl = g.createRadialGradient(cx - sHalf + 24, sTop + 14, 2, cx - sHalf + 24, sTop + 14, 54);
+  gl.addColorStop(0, `rgba(240,68,73,${(0.24 * fade).toFixed(3)})`); gl.addColorStop(1, 'rgba(240,68,73,0)');
+  g.fillStyle = gl; g.fillRect(cx - sHalf - 30, 36, 110, 90);
+  const gr = g.createRadialGradient(cx + sHalf - 24, sTop + 14, 2, cx + sHalf - 24, sTop + 14, 54);
+  gr.addColorStop(0, `rgba(57,139,224,${(0.24 * fade).toFixed(3)})`); gr.addColorStop(1, 'rgba(57,139,224,0)');
+  g.fillStyle = gr; g.fillRect(cx + sHalf - 80, 36, 110, 90);
+
+  for (const dir of [-1, 1]) {
+    const ax = cx + dir * anchorHalf, edge = cx + dir * sHalf;
+    // Outer frame silk line shooting down the side of the glass panel
+    g.strokeStyle = `rgba(16,27,50,${(0.32 * fade).toFixed(3)})`; g.lineWidth = 1.8;
+    spQuadPart(g, ax, 43.5, edge + dir * 12, sTop + sH * 0.25, edge + dir * 2, sBot - 10, shoot, false);
+    g.strokeStyle = `rgba(232,237,245,${(0.88 * fade).toFixed(3)})`; g.lineWidth = 1.1;
+    const tip = spQuadPart(g, ax, 43.5, edge + dir * 12, sTop + sH * 0.25, edge + dir * 2, sBot - 10, shoot, true);
+    if (tip && p < 0.78) {
+      const [tx, ty, m0x, m0y] = tip;
+      const dx = tx - m0x, dy = ty - m0y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
+      g.strokeStyle = `rgba(255,255,255,${(0.95 * fade).toFixed(3)})`; g.lineWidth = 1.2;
+      g.beginPath(); g.moveTo(tx - ux * 12, ty - uy * 12); g.lineTo(tx, ty); g.stroke();
+      g.strokeStyle = `rgba(255,255,255,${(0.65 * fade).toFixed(3)})`; g.lineWidth = 0.56;
+      g.beginPath();
+      g.moveTo(tx - ux * 2, ty - uy * 2); g.lineTo(tx + ux * 4 - uy * 2.4, ty + uy * 4 + ux * 2.4);
+      g.moveTo(tx - ux * 2, ty - uy * 2); g.lineTo(tx + ux * 3.5 + uy * 2.2, ty + uy * 3.5 - ux * 2.2);
+      g.stroke();
+    }
+    // Outer flare strand + blue secondary bracing strand
+    g.strokeStyle = `rgba(232,237,245,${(0.76 * fade).toFixed(3)})`; g.lineWidth = 0.85;
+    spQuadPart(g, ax - dir * 18, 43.5, edge + dir * 22, sTop + 18, edge + dir * 16, sTop + Math.min(115, sH * 0.62), shoot, false);
+    g.strokeStyle = `rgba(57,139,224,${(0.44 * fade).toFixed(3)})`; g.lineWidth = 0.82;
+    spQuadPart(g, cx + dir * 32, 43.5, cx + dir * 125, sTop + 4, edge - dir * 6, sTop + 26, shoot, false);
+
+    // Scalloped cross-rungs uniting the two side strands
+    if (shoot > 0.35) {
+      for (const u of [0.35, 0.68]) {
+        const p1 = spQPt(ax, 43.5, edge + dir * 12, sTop + sH * 0.25, edge + dir * 2, sBot - 10, u * shoot * 0.7);
+        const p2 = spQPt(ax - dir * 18, 43.5, edge + dir * 22, sTop + 18, edge + dir * 16, sTop + Math.min(115, sH * 0.62), u * shoot);
+        spScallop(g, ax, 43.5, p1[0], p1[1], p2[0], p2[1], 0.2, `rgba(255,255,255,${(0.68 * fade).toFixed(3)})`, 0.72, 0.2 * fade);
+      }
+    }
+  }
+  g.restore();
+}
+function sizeSpFx(on) {
+  const dpr = on ? (window.devicePixelRatio || 1) : 1;
+  const h = on ? FX_SP_H : 110;
+  fx.width = Math.round(FX_W * dpr); fx.height = Math.round(h * dpr);
+  fxG.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', () => { if (spOn) sizeSpFx(true); });
+
+function drawSpider(t, dt, on, live) {
+  if (!on) {
+    if (spOn) {
+      spOn = false; spBug.ready = false; sizeSpFx(false); fxG.clearRect(0, 0, FX_W, 110);
+      document.body.classList.remove('spider', 'sp-idle');
+    }
+    return;
+  }
+  if (!spOn) { spOn = true; sizeSpFx(true); }
+  const g = fxG, W = Math.max(70, island.offsetWidth || island.clientWidth), cx = FX_W * 0.5;
+  const x0 = cx - W * 0.5, x1 = cx + W * 0.5;
+  spPrevW = W;
+  g.clearRect(0, 0, FX_W, FX_SP_H);
+  g.save();
+  g.globalAlpha = clamp((skyA - 0.45) / 0.5, 0, 1);
+  g.lineCap = 'round'; g.lineJoin = 'round';
+
+  // Elastic spring physics for 3D hanging silk strands (mouse proximity/velocity + gentle air + music beat)
+  const beatPluck = live && !reducedMotion && bass - bassSlow > 0.11 ? (16 + bass * 26) : 0;
+  const spanL = clamp(W * 0.44, 38, 78), spanR = clamp(W * 0.36, 30, 64);
+  spSpring(spStrands[0], x0 + 11, 5, cx, dt, beatPluck * 0.25);
+  spSpring(spStrands[1], x1 - 13, 5, cx, dt, -beatPluck * 0.25);
+  spSpring(spStrands[2], x0 + spanL * 0.32, 54, cx, dt, beatPluck);
+  spSpring(spStrands[3], x0 + spanL * 0.52, 53, cx, dt, beatPluck * 0.8);
+  spSpring(spStrands[4], x1 - spanR * 0.42, 50, cx, dt, beatPluck * 0.9);
+
+  const air = reducedMotion ? 0 : Math.sin(t * 0.0013) * 0.85;
+  const vib = live && !reducedMotion ? bass * 2.2 : 0;
+  const glint = clamp(0.5 + spMx * 0.34, 0.18, 0.82);
+  const pri = 'rgba(232,237,245,.86)', priSoft = 'rgba(232,237,245,.78)';
+  const sec = 'rgba(255,255,255,.55)', secSoft = 'rgba(255,255,255,.46)';
+  const s0 = spStrands[0], s1 = spStrands[1], s2 = spStrands[2], s3 = spStrands[3], s4 = spStrands[4];
+
+  // ---- 1. Architectural top ceiling suspension filaments (taut, vertical, zero spiky silhouette)
+  spSilk(g, x0 + 13.5, 0, x0 + 12.6 + s0.x * 0.35 + spMx * 0.5, 4.4, x0 + 14.0, 8.5, priSoft, 0.78, 0.28, -1);
+  spSilk(g, x0 + 7.8, 0, x0 + 8.8 + s0.x * 0.45 + spMx * 0.6, 5.2, x0 + 7.5, 10.6, sec, 0.56, 0.20, -1);
+  spScallop(g, x0 + 11.2, 9.2, x0 + 8.4 + s0.x * 0.2, 4.6, x0 + 13.0 + s0.x * 0.2, 4.2, 0.22, secSoft, 0.50, 0.16);
+  spSilk(g, x1 - 14.0, 0, x1 - 13.2 + s1.x * 0.35 + spMx * 0.5, 4.4, x1 - 14.5, 8.5, priSoft, 0.78, 0.28, -1);
+
+  // Resolve the live 3D spider-cradle junction first so bridle threads and dragline stay seamlessly fused
+  const wantAx = st.stackOpen
+    ? Math.max(x1 + 8, cx + 220)
+    : x1 - clamp(W * 0.14, 12, 22) + s4.x * 0.45 + spMx * 1.1;
+  const wantAy = st.stackOpen ? 42 : 50.6 + vib * 0.55 + s4.y * 0.5;
+  if (!spBug.ready) { spBug.ax = wantAx; spBug.ay = wantAy; spBug.ready = true; spBug.at = t + 4500; }
+  const prevAx = spBug.ax;
+  const ak = Math.min(1, dt * 14);
+  spBug.ax += (wantAx - spBug.ax) * ak;
+  spBug.ay += (wantAy - spBug.ay) * ak;
+  const anchorVel = dt > 0.001 ? clamp((spBug.ax - prevAx) / dt, -420, 420) : 0;
+
+  // ---- 2. Independent 3D gravity-draped hanging webs & dual-layer catenary silk around the island
+  if (!st.stackOpen) {
+    // LEFT: sculpted 3D hanging corner cobweb + dual parallax catenary swags around left cheek & underbelly
+    const lxA = x0 + 0.4, lyA = 25.0, lxB = x0 + spanL, lyB = 43.6;
+    const lcx = x0 + spanL * 0.28 + s2.x + air * 0.45 + spMx * 1.5, lcy = 57.2 + vib + s2.y;
+    const b0x = x0 + 3.2, b0y = 35.8, b1x = lxB + 11, b1y = 43.6;
+    const bcx = x0 + spanL * 0.52 + s3.x + air * 0.65 + spMx * 0.85, bcy = 54.6 + vib * 0.8 + s3.y;
+    spSilk(g, b0x, b0y, bcx, bcy, b1x, b1y, sec, 0.62, 0.22, -1);
+
+    // Delicate radial cobweb spokes + concave scalloped cross-threads (true 3D depth & light catch)
+    const hubLx = x0 + 6.4, hubLy = 39.6;
+    const m1 = spQPt(lxA, lyA, lcx, lcy, lxB, lyB, 0.28);
+    const m2 = spQPt(lxA, lyA, lcx, lcy, lxB, lyB, 0.52);
+    const m3 = spQPt(lxA, lyA, lcx, lcy, lxB, lyB, 0.76);
+    spSilk(g, x0 + 2.4, 34.4, (x0 + 2.4 + m1[0]) * 0.5 - 0.6, (34.4 + m1[1]) * 0.5, m1[0], m1[1], sec, 0.58, 0.20, -1);
+    spSilk(g, hubLx, hubLy, (hubLx + m2[0]) * 0.5, (hubLy + m2[1]) * 0.5 + 0.5, m2[0], m2[1], sec, 0.60, 0.22, -1);
+    spSilk(g, x0 + 16.5, 43.5, (x0 + 16.5 + m3[0]) * 0.5, (43.5 + m3[1]) * 0.5 + 0.5, m3[0], m3[1], secSoft, 0.55, 0.18, -1);
+
+    const i1 = [(x0 + 2.4 + m1[0]) * 0.5, (34.4 + m1[1]) * 0.5];
+    const i2 = [(hubLx + m2[0]) * 0.5, (hubLy + m2[1]) * 0.5];
+    const i3 = [(x0 + 16.5 + m3[0]) * 0.5, (43.5 + m3[1]) * 0.5];
+    spScallop(g, hubLx, hubLy, x0 + 0.9, 29.8, i1[0], i1[1], 0.22, secSoft, 0.52, 0.16);
+    spScallop(g, hubLx, hubLy, i1[0], i1[1], i2[0], i2[1], 0.24, sec, 0.56, 0.18);
+    spScallop(g, hubLx, hubLy, i2[0], i2[1], i3[0], i3[1], 0.24, sec, 0.56, 0.18);
+    spScallop(g, hubLx, hubLy, i3[0], i3[1], x0 + 27, 43.6, 0.20, secSoft, 0.52, 0.16);
+    spSilk(g, lxA, lyA, lcx, lcy, lxB, lyB, pri, 0.92, 0.36, glint);
+
+    // Whisper-fine center bridge thread when compact
+    const rxB = x1 - spanR, ryB = 43.6;
+    if (rxB - lxB < 140) {
+      spSilk(g, lxB - 3, 43.6, cx + spMx * 1.1, 48.0 + vib * 0.45 + (s2.y + s4.y) * 0.25, rxB + 5, 43.6, secSoft, 0.54, 0.20, -1);
+    }
+
+    // RIGHT: 3D triangulated spider-silk cradle converging cleanly into (spBug.ax, spBug.ay)
+    const jx = spBug.ax, jy = spBug.ay;
+    const rxA = x1 - 0.5, ryA = 26.8, hubRx = x1 - 7.2, hubRy = 40.2;
+    spSilk(g, hubRx, hubRy, (hubRx + jx) * 0.5 + 0.5, (hubRy + jy) * 0.5, jx, jy, sec, 0.60, 0.22, -1);
+    const rL1 = spQPt(rxB, ryB, jx - 7, 48.4, jx, jy, 0.52);
+    const rM1 = [(hubRx + jx) * 0.5, (hubRy + jy) * 0.5];
+    const rR1 = spQPt(rxA, ryA, x1 + 0.6, 41.8, jx, jy, 0.52);
+    spScallop(g, hubRx, hubRy, rL1[0], rL1[1], rM1[0], rM1[1], 0.25, sec, 0.56, 0.18);
+    spScallop(g, hubRx, hubRy, rM1[0], rM1[1], rR1[0], rR1[1], 0.25, sec, 0.56, 0.18);
+    spSilk(g, rxB, ryB, jx - 7, 48.4, jx, jy, priSoft, 0.84, 0.34, 1 - glint);
+    spSilk(g, rxA, ryA, x1 + 0.6, 41.8, jx, jy, pri, 0.90, 0.36, glint);
+  } else {
+    // Taut 3D silk suspension rigging holding the opened glass stack cleanly underneath the island
+    const inH = Math.min(W * 0.43, 172), outH = 194;
+    for (const dir of [-1, 1]) {
+      const a1 = cx + dir * inH, b1 = cx + dir * outH;
+      const a2 = cx + dir * Math.max(24, inH - 28), b2 = cx + dir * (outH - 36);
+      spSilk(g, a2, 43.4, (a2 + b2) * 0.5 + spMx, 48.5, b2, 53, sec, 0.62, 0.22, -1);
+      spSilk(g, a1, 43.2, (a1 + b1) * 0.5 + dir * 2 + spMx * 1.2, 48.2, b1, 53.5, pri, 0.92, 0.34, 0.5);
+      spScallop(g, a1, 43.2, (a1 + b1) * 0.5, 48.2, (a2 + b2) * 0.5, 48.5, 0.22, secSoft, 0.52, 0.16);
+    }
+    // Graceful outrigger silk strand carries the spider just clear of the glass cards
+    spSilk(g, x1 - 5.5, 36, (x1 + spBug.ax) * 0.5, 36.5, spBug.ax, spBug.ay, priSoft, 0.80, 0.30, -1);
+  }
+
+  // ---- 3. The living miniature 3D spider suspended on a physical pendulum silk thread
+
+  if (!reducedMotion && t > spBug.at) {
+    // Calmly lowers or climbs a few pixels every several seconds
+    spBug.to = st.stackOpen ? 20 + Math.random() * 10 : 19 + Math.random() * 17;
+    spBug.at = t + 6500 + Math.random() * 7500;
+  }
+  const prevLen = spBug.len;
+  const targetLen = clamp((reducedMotion ? 23 : spBug.to) - spBug.reel + (live && !reducedMotion ? bass * 4.5 : 0), 13, 40);
+  spBug.len += (targetLen - spBug.len) * Math.min(1, dt * (targetLen < spBug.len ? 5.2 : 2.2));
+  const climbSpeed = dt > 0.001 ? Math.abs(spBug.len - prevLen) / dt : 0;
+
+  // Pendulum dynamics + anchor inertia + gentle air current + mouse breeze
+  let reelWant = 0, cursorAlert = 0;
+  if (!reducedMotion) {
+    const curSx = spBug.ax + Math.sin(spBug.th) * spBug.len;
+    const curSy = spBug.ay + Math.cos(spBug.th) * spBug.len;
+    const winW = window.innerWidth || FX_W;
+    if (st.cx !== undefined) {
+      const mx = st.cx - winW * 0.5 + cx, my = st.cy;
+      const dx = curSx - mx, dy = curSy - my, d = Math.hypot(dx, dy);
+      if (d < 56 && d > 1) {
+        const f = 1 - d / 56;
+        spBug.om += (clamp(dx / d, -1, 1) * 4.8 + clamp(spCvx, -240, 240) * 0.018) * f * dt;
+        reelWant = 8.5 * f;
+        cursorAlert = f;
+      }
+    }
+    const breeze = Math.sin(t * 0.00135) * 0.55 + Math.sin(t * 0.0024 + 1.7) * 0.3 + (live ? Math.sin(t * 0.006) * bass * 1.8 : 0);
+    const grav = 240 / Math.max(14, spBug.len);
+    const alpha = -grav * Math.sin(spBug.th) - (anchorVel * 0.042) * Math.cos(spBug.th) + breeze - 2.65 * spBug.om;
+    spBug.om = clamp(spBug.om + alpha * dt, -4.5, 4.5);
+    spBug.th = clamp(spBug.th + spBug.om * dt, -0.58, 0.58);
+  } else {
+    spBug.th = 0; spBug.om = 0;
+  }
+  spBug.reel += (reelWant - spBug.reel) * Math.min(1, dt * (reelWant > spBug.reel ? 6 : 1.8));
+  const wantLegA = reducedMotion ? 0 : clamp(climbSpeed * 0.09 + Math.abs(spBug.om) * 0.35 + cursorAlert * 0.75 + (live ? bass * 0.65 : 0.06), 0, 1.15);
+  spBug.legA += (wantLegA - spBug.legA) * Math.min(1, dt * 8);
+  spBug.leg += dt * (2.2 + climbSpeed * 0.55 + cursorAlert * 7 + (live ? energy * 9 : 0));
+
+  const sx = spBug.ax + Math.sin(spBug.th) * spBug.len;
+  const sy = spBug.ay + Math.cos(spBug.th) * spBug.len;
+  const attachX = sx - Math.sin(spBug.th) * 4.9, attachY = sy - Math.cos(spBug.th) * 4.9;
+  const bowX = (spBug.ax + attachX) * 0.5 - spBug.om * 1.1;
+  const bowY = (spBug.ay + attachY) * 0.5 + 0.6;
+  // Dragline thread + anchor knot + 3D spider
+  spSilk(g, spBug.ax, spBug.ay, bowX, bowY, attachX, attachY, 'rgba(232,237,245,.88)', 0.88, 0.36, clamp(0.48 + spMy * 0.25, 0.2, 0.8));
+  g.fillStyle = 'rgba(255,255,255,.82)';
+  g.beginPath(); g.arc(spBug.ax, spBug.ay, 1.0, 0, 6.283); g.fill();
+  paintLittleSpider(g, sx, sy, -spBug.th * 0.82, spBug.leg, spBug.legA, spMx);
+
+  // ---- 4. Kinetic web-shoot formations when opening the pill or the stack
+  const now = performance.now();
+  drawPillWebShoot(g, now, cx, W);
+  drawStackWebShoot(g, now, cx, W);
+  g.restore();
+}
+const spBusy = (t) => spOn && (
+  t - spShoot.at < spShoot.dur ||
+  t - spStackShoot.at < spStackShoot.dur ||
+  t - spCurAt < 450 ||
+  Math.abs(spPrevW - island.offsetWidth) > 0.5 ||
+  (spExp > 0.01 && spExp < 0.99) ||
+  Math.abs(spBug.om) > 0.08
+);
+
 // whichever of these the current skin needs; the rest are switched off first so two never share the canvas
 let aura = null;
 function drawAura(t, dt, live) {
-  const want = !st.tucked && skyA > 0.5 && ['venom', 'cloud', 'water', 'lava', 'ice'].includes(lookNow) ? lookNow : null;
-  if (want !== aura) { drawGoo(t, 0, false); drawCloud(t, 0, false); drawBody(t, 0, null); drawIce(t, 0, false); aura = want; document.body.classList.toggle('scene', !!want); document.body.classList.toggle('venom', want === 'venom'); }
+  const want = !st.tucked && skyA > 0.5 && ['venom', 'cloud', 'water', 'lava', 'ice', 'spider'].includes(lookNow) ? lookNow : null;
+  if (want !== aura) {
+    drawGoo(t, 0, false); drawCloud(t, 0, false); drawBody(t, 0, null); drawIce(t, 0, false); drawSpider(t, 0, false);
+    aura = want;
+    document.body.classList.toggle('scene', !!want && want !== 'spider');
+    document.body.classList.toggle('venom', want === 'venom');
+  }
   if (want === 'venom') drawGoo(t, dt, true, live);
+  else if (want === 'spider') drawSpider(t, dt, true, live);
   else if (want === 'cloud') drawCloud(t, dt, true, live);
   else if (want === 'ice') drawIce(t, dt, true, live);
   else if (want) drawBody(t, dt, want, live);
@@ -1217,10 +1898,11 @@ function drawLook(t, dt, live) {
   g.clearRect(0, 0, SKY_W, SKY_H);
   if (skyA < 0.01) return;
   // behind a row of buttons or a line of text the skin steps back, so everything stays easy to read
-  const want = cur === 'idle' || ['cloud', 'water', 'lava', 'ice'].includes(lookDrawn) ? 1 : cur === 'media' || cur === 'held' ? 0.72 : lookDrawn === 'sky' ? 0.8 : 0.55;
+  const full = ['cloud', 'water', 'lava', 'ice', 'spider'].includes(lookDrawn);
+  const want = cur === 'idle' || full ? 1 : cur === 'media' || cur === 'held' ? 0.72 : lookDrawn === 'sky' ? 0.8 : 0.55;
   dimA += (want - dimA) * 0.18;
   const W = island.clientWidth, x0 = (SKY_W - W) / 2;
-  (PAINT[lookDrawn] || paintSky)(g, t, dt, x0, x0 + W, W, skyA * dimA * (live || ['cloud', 'water', 'lava', 'ice'].includes(lookDrawn) ? 1 : 0.9));
+  (PAINT[lookDrawn] || paintSky)(g, t, dt, x0, x0 + W, W, skyA * dimA * (live || full ? 1 : 0.9));
   g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
 }
 const barsC = $('#bars'), barsG = barsC.getContext('2d');
@@ -1230,6 +1912,8 @@ function frame(t) {
   const playing = st.media.playing && musicOn();
   const look = st.skin !== 'black' ? st.skin : playing && st.visuals && st.react ? 'sky' : null;      // one theme for everything; plain black gets the night sky while music plays
   document.body.classList.toggle('jarvis', look === 'jarvis');
+  document.body.classList.toggle('spider', look === 'spider');
+  document.body.classList.toggle('sp-idle', look === 'spider' && cur === 'idle');
   if (look !== lookNow) {
     if (look && lookNow) skyA = Math.min(skyA, 0.2);       // one skin gives way to another: fade the new one in
     lookNow = look; applyPal();
@@ -1245,13 +1929,17 @@ function frame(t) {
       return;
     }
     if (st.tucked) { drawAura(t, 0, false); return; }
-    if (t - lastPaint < (aura ? 24 : 45)) return;       // a resting skin moves slowly: about 20 frames a second is plenty
+    const step = look === 'spider' ? (spBusy(t) ? 14 : 30) : (aura ? 24 : 45);
+    if (t - lastPaint < step) return;       // resting skins stay featherlight; Spider-Man wakes to 60fps on web-shoot or hover
   }
   idleFrames = 0;
   const dt = Math.min(0.05, (t - lastT) / 1000); lastT = t; lastPaint = t;
   sampleLevels(t, playing);
 
-  glow.style.opacity = playing && st.react && (!aura || aura === 'lava') ? (skyA * clamp(0.1 + bass * 0.34, 0, 0.42)).toFixed(3) : 0;
+  const glowOn = look === 'spider'
+    ? (playing && st.react ? skyA * clamp(0.14 + bass * 0.16, 0, 0.28) : cur !== 'idle' ? skyA * 0.14 : 0)
+    : (playing && st.react && (!aura || aura === 'lava') ? skyA * clamp(0.1 + bass * 0.34, 0, 0.42) : 0);
+  glow.style.opacity = glowOn.toFixed(3);
   glow.style.transform = `scale(${(1 + bass * 0.1).toFixed(3)}, ${(1 + bass * 0.45).toFixed(3)})`;
   if (st.react) { drawLook(t, dt, playing); drawAura(t, dt, playing); }
   else {            // the theme stays calm: for a moment the painters see silence
@@ -1264,8 +1952,10 @@ function frame(t) {
   if (cur === 'media') {
     const w = barsC.width, h = barsC.height, n = 5, bw = 6, gap = 5, x0 = (w - (n * bw + (n - 1) * gap)) / 2;
     barsG.clearRect(0, 0, w, h);
+    const spCols = look === 'spider' ? ['#F04449', '#E8EDF5', '#FFFFFF', '#E8EDF5', '#398BE0'] : null;
     barsG.fillStyle = document.body.classList.contains('daylight') ? '#18222f' : '#fff';
     for (let i = 0; i < n; i++) {
+      if (spCols) barsG.fillStyle = spCols[i];
       const v = clamp(levels[1 + i * 4] * 1.5, 0.14, 1), bh = v * (h - 4);
       barsG.beginPath(); barsG.roundRect(x0 + i * (bw + gap), (h - bh) / 2, bw, bh, 3); barsG.fill();
     }
@@ -1858,7 +2548,7 @@ const SETTINGS_UI = [
   ['seg', 'calendar', 'Date', [['gregorian', 'Greg.'], ['shamsi', 'Shamsi'], ['shamsi-fa', 'شمسی'], ['both', 'Both']]],
   ['toggle', 'autoHide', 'Hide while a window is underneath'],
   ['toggle', 'hideVideo', 'Stay out of the way for videos'],
-  ['swatch', 'skin', 'Theme', ['black', 'nebula', 'crystal', 'ember', 'reactor', 'venom', 'jarvis']], // cloud, water, lava and ice are parked until they are finished
+  ['swatch', 'skin', 'Theme', ['black', 'nebula', 'crystal', 'ember', 'reactor', 'venom', 'jarvis', 'spider']], // cloud, water, lava and ice are parked until they are finished
   ['toggle', 'musicReact', 'Theme reacts to music'],
   ['toggle', 'visuals', 'Night sky with music (black theme)'],
   ['step', 'notifSeconds', 'Notification stays for', 2, 10, 's'],
@@ -1951,7 +2641,7 @@ const TOUR = [
   ['clipboard', 'Clipboard history', 'Everything you copied, with images and pins', 'clips'],
   ['key', 'Passwords', 'Makes one, asks what it is for, keeps it encrypted', 'vault'],
   ['timer', 'Timer', 'Stays in sight while it runs', 'timer'],
-  ['gear', 'Themes and settings', 'Liquid skins, J.A.R.V.I.S., Venom, and every switch', 'settings'],
+  ['gear', 'Themes and settings', 'Spider-Man, Venom, J.A.R.V.I.S., liquid skins, and every switch', 'settings'],
 ];
 function renderTour() {
   $('#stack-clear').classList.add('hidden');
@@ -2006,6 +2696,11 @@ window.qazi.onCursor(({ x, y }) => {
   const k = d < 420 && d > 1 ? Math.min(1, d / 120) : 0;
   face.style.setProperty('--lx', (k ? dx / d * 2.4 * k : 0).toFixed(2) + 'px');
   face.style.setProperty('--ly', (k ? dy / d * 1.6 * k : 0).toFixed(2) + 'px');
+  if (spOn) {
+    const now = performance.now(), dt = Math.max(0.012, (now - spCurAt) / 1000);
+    if (now - spCurAt < 180) { spCvx = (x - spCurX) / dt; spCvy = (y - spCurY) / dt; }
+    spCurX = x; spCurY = y; spCurAt = now;
+  }
 });
 
 // ------------------------------------------------------------ boot
@@ -2018,7 +2713,7 @@ const applySettings = (s) => {
   st.deviceAlerts = s.deviceAlerts !== false;
   st.shelfOn = s.shelf !== false;
   st.visuals = s.visuals !== false;
-  st.skin = ['nebula', 'crystal', 'ember', 'reactor', 'venom', 'jarvis'].includes(s.skin) ? s.skin : 'black';
+  st.skin = ['nebula', 'crystal', 'ember', 'reactor', 'venom', 'jarvis', 'spider'].includes(s.skin) ? s.skin : 'black';
   st.musicTheme = THEMES[s.musicTheme] ? s.musicTheme : 'sky';
   st.smartCopy = s.smartCopy !== false;
   st.react = s.musicReact !== false;
@@ -2156,5 +2851,5 @@ window.qazi.onDownload((d) => {
 window.qazi.onSettings(applySettings);
 window.qazi.getSettings().then(applySettings);
 paintVol(); tick(); updateBadge(); paintStatus(); render();
-window.__qazi = { st, timer, showNotif, onNotif, onMedia, render, setStack, showHud, setShelf, quickNote, parseReminder, guessSite, emote, ask, tick, smart, calc, jalaliToGregorian, levels, fake: (v) => { st.fakeLevels = v; } };   // debug hooks
+window.__qazi = { st, timer, showNotif, onNotif, onMedia, render, setStack, showHud, setShelf, quickNote, parseReminder, guessSite, emote, ask, tick, smart, calc, jalaliToGregorian, levels, triggerPillShoot, triggerStackShoot, fake: (v) => { st.fakeLevels = v; } };   // debug hooks
 })();

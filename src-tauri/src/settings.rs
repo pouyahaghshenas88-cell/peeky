@@ -10,7 +10,7 @@ use windows::Win32::System::Registry::*;
 use crate::sys;
 
 static SETTINGS: Mutex<Option<Map<String, Value>>> = Mutex::new(None);
-const THEMES: [&str; 11] = ["black", "nebula", "crystal", "ember", "reactor", "venom", "cloud", "water", "lava", "ice", "jarvis"];
+const THEMES: [&str; 12] = ["black", "nebula", "crystal", "ember", "reactor", "venom", "cloud", "water", "lava", "ice", "jarvis", "spider"];
 const BOOLS: [&str; 15] = ["autoUpdate", "musicReact", "netAlerts", "sensorDot", "smartCopy", "autoHide", "hideVideo", "copyPreview", "clipHistory", "deviceAlerts", "downloadAlerts", "shelf", "visuals", "noteHotkey", "vaultSymbols"];
 const CALENDARS: [&str; 4] = ["gregorian", "shamsi", "shamsi-fa", "both"];
 

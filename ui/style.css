@@ -461,3 +461,683 @@ body.daylight #island .sep { background: rgba(24, 34, 47, .25); }
 .row.set.upd .ic.plain { width: 30px; height: 30px; border-radius: 50%; color: #34d399; background-color: rgba(52, 211, 153, .14); }
 .row.set .go.solid { background: #34d399; color: #04130c; font-weight: 600; }
 .row.set .go.solid:hover { background: #fff; color: #000; }
+
+/* ------------------------------------------------ Spider-Man: classic comic-modern 3D suit, silk webs & glass UI */
+.sws button { width: 15px; height: 15px; }
+.sw-spider {
+  background:
+    radial-gradient(ellipse 34% 22% at 35% 47%, #FFFFFF 0 72%, #101B32 76% 98%, transparent 100%),
+    radial-gradient(ellipse 34% 22% at 68% 47%, #FFFFFF 0 72%, #101B32 76% 98%, transparent 100%),
+    linear-gradient(132deg, #F04449 0%, #D71920 46%, #8F1018 52%, #174A85 62%, #1261B5 88%, #398BE0 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .34), 0 1px 4px rgba(215, 25, 32, .3);
+}
+
+body.spider {
+  font-family: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: #FFFFFF;
+  letter-spacing: .12px;
+  --dim: #929BAA;
+  --sp-mx: 50%;
+  --sp-my: 30%;
+  --sp-ma: 0;
+  --sp-sx: 50%;
+  --sp-sy: 12%;
+  --sp-px: 0px;
+  --sp-py: 0px;
+}
+
+/* Layering: #glow (0) < #island (2) < #fx silk & 3D spider (3, click-through) < #side & #stack (4) */
+body.spider #fx { z-index: 3; width: 700px; height: 360px; pointer-events: none; }
+body.spider #side, body.spider #stack { z-index: 4; }
+
+body.spider #island {
+  z-index: 2;
+  background: linear-gradient(132deg, rgba(215, 25, 32, .92) 0%, rgba(143, 16, 24, .88) 26%, rgba(16, 27, 50, .86) 52%, rgba(23, 74, 133, .88) 76%, rgba(18, 97, 181, .92) 100%);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  box-shadow:
+    0 7px 22px rgba(0, 0, 0, .42),
+    0 2px 5px rgba(0, 0, 0, .24),
+    -7px 3px 16px rgba(215, 25, 32, .18),
+    7px 3px 16px rgba(18, 97, 181, .19),
+    inset 0 0 0 1px rgba(255, 255, 255, .18),
+    inset 0 1px 0 rgba(255, 255, 255, .30),
+    inset 0 -1.5px 2.5px rgba(16, 27, 50, .52);
+  transition: width .52s cubic-bezier(.24, 1.32, .38, 1), transform .36s var(--spring), box-shadow .28s var(--ease), background .32s var(--ease);
+}
+body.spider.sp-idle #island {
+  background: linear-gradient(168deg, #D71920 0%, #D71920 62%, #8F1018 100%);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, .40),
+    0 2px 4px rgba(0, 0, 0, .24),
+    0 3px 14px rgba(215, 25, 32, .20),
+    inset 0 0 0 1px rgba(255, 255, 255, .18),
+    inset 0 1.2px 0 rgba(255, 255, 255, .28),
+    inset 0 -2px 4px rgba(16, 27, 50, .46);
+}
+/* Sculpted 3D inner glass bezel painted ABOVE #sky so the specular rim is razor-sharp */
+body.spider:not(.sp-idle) #sky { opacity: .88; }
+body.spider #dots { z-index: 4; }
+body.spider #island::before {
+  content: ""; position: absolute; z-index: 2; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .13) 0%, rgba(255, 255, 255, 0) 38%, rgba(16, 27, 50, .18) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .18),
+    inset 0 1.1px 0 rgba(255, 255, 255, .32),
+    inset 0 -1.5px 2.5px rgba(16, 27, 50, .50),
+    inset 1.5px 0 8px rgba(240, 68, 73, .14),
+    inset -1.5px 0 8px rgba(57, 139, 224, .15);
+  transition: box-shadow .22s var(--ease), opacity .2s;
+}
+body.spider #island.hover::before {
+  box-shadow:
+    inset 0 0 0 1px rgba(57, 139, 224, .58),
+    inset 0 1.2px 0 rgba(255, 255, 255, .40),
+    inset 0 -1.5px 2.5px rgba(16, 27, 50, .48),
+    inset 2px 0 10px rgba(240, 68, 73, .18),
+    inset -2px 0 10px rgba(57, 139, 224, .20);
+}
+body.spider #island.dropping::before {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(57, 139, 224, .68),
+    inset 0 1.2px 0 rgba(255, 255, 255, .36),
+    inset 0 -1.5px 2.5px rgba(16, 27, 50, .45);
+}
+/* Dynamic mouse-tracking specular reflection (controlled 10-22% alpha) */
+body.spider #island::after {
+  content: ""; position: absolute; z-index: 2; inset: 0; border-radius: inherit; pointer-events: none;
+  opacity: var(--sp-ma, 0);
+  background:
+    radial-gradient(95px 38px at var(--sp-mx, 50%) var(--sp-my, 25%), rgba(255, 255, 255, .18), rgba(57, 139, 224, .11) 48%, transparent 78%),
+    radial-gradient(70px 10px at var(--sp-mx, 50%) 0%, rgba(255, 255, 255, .36), transparent 72%);
+  transition: opacity .25s ease;
+}
+body.spider #island.hover {
+  transform: translateX(-50%) scale(1.032) translateY(-.5px);
+  box-shadow:
+    0 9px 26px rgba(0, 0, 0, .45),
+    -9px 4px 18px rgba(240, 68, 73, .20),
+    9px 4px 18px rgba(57, 139, 224, .22),
+    inset 0 0 0 1px rgba(57, 139, 224, .52),
+    inset 0 1px 0 rgba(255, 255, 255, .36),
+    inset 0 -1.5px 2.5px rgba(16, 27, 50, .5);
+}
+body.spider #island.dropping {
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, .44),
+    0 0 18px rgba(57, 139, 224, .22),
+    inset 0 0 0 1.5px rgba(57, 139, 224, .68),
+    inset 0 1px 0 rgba(255, 255, 255, .3);
+}
+body.spider #island.tucked, body.spider #island.tucked.hover {
+  background: rgba(16, 27, 50, .82);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+body.spider #island.tucked::before, body.spider #island.tucked::after { opacity: 0; }
+
+/* Controlled ambient red/blue aura behind the pill — never harsh neon */
+body.spider #glow {
+  background: linear-gradient(98deg, rgba(215, 25, 32, .85), rgba(143, 16, 24, .6) 36%, rgba(23, 74, 133, .65) 64%, rgba(18, 97, 181, .88));
+  filter: blur(22px);
+}
+
+/* Synchronized view entrance when expanding with web-shoot */
+body.spider .view {
+  z-index: 3;
+  text-shadow: 0 1px 2.5px rgba(16, 27, 50, .55);
+  transition: opacity .19s var(--ease), transform .44s cubic-bezier(.24, 1.32, .38, 1), filter .22s;
+}
+body.spider [data-view="tools"].on .ib {
+  animation: sp-pop .38s var(--spring) both;
+}
+body.spider [data-view="tools"].on .ib:nth-of-type(2) { animation-delay: 18ms; }
+body.spider [data-view="tools"].on .ib:nth-of-type(3) { animation-delay: 34ms; }
+body.spider [data-view="tools"].on .ib:nth-of-type(4) { animation-delay: 50ms; }
+body.spider [data-view="tools"].on .ib:nth-of-type(5) { animation-delay: 66ms; }
+body.spider [data-view="tools"].on .ib:nth-of-type(6) { animation-delay: 82ms; }
+body.spider [data-view="tools"].on .ib:nth-of-type(7) { animation-delay: 98ms; }
+body.spider [data-view="tools"].on .ib:nth-of-type(8) { animation-delay: 114ms; }
+body.spider [data-view="tools"].on .ib:nth-of-type(9) { animation-delay: 130ms; }
+body.spider [data-view="tools"].on .ib:nth-of-type(10) { animation-delay: 146ms; }
+body.spider [data-view="tools"].on .ib:nth-of-type(11) { animation-delay: 162ms; }
+@keyframes sp-pop { from { opacity: 0; transform: scale(.72) translateY(3px); } }
+
+/* ------------------------------------------------ Iconic classic Spider-Man mask lenses (idle pill) */
+body.spider [data-view="idle"].faceon { padding: 0 21px; }
+body.spider #i-face {
+  gap: 6.5px; height: 17px;
+  filter: drop-shadow(0 1.6px 1.8px rgba(16, 27, 50, .58)) drop-shadow(0 -.55px 0 rgba(255, 255, 255, .26));
+}
+body.spider #i-face i {
+  position: relative; width: 22px; height: 17px; border: 0; border-radius: 0;
+  background: linear-gradient(165deg, #1b2844 0%, #101B32 50%, #0a101d 100%);
+  clip-path: path('M 1.2 1.0 C 8.0 1.3 16.4 5.5 21.1 11.1 C 21.5 11.7 21.3 12.5 20.6 13.1 C 16.6 16.4 8.6 16.9 3.8 13.1 C 0.7 10.6 0.1 5.2 0.7 1.7 C 0.8 1.2 1.0 1.0 1.2 1.0 Z');
+  transform: translate(var(--lx), var(--ly));
+  transition: transform .15s ease-out, clip-path .18s var(--ease);
+}
+body.spider #i-face i:last-child {
+  clip-path: path('M 20.8 1.0 C 14.0 1.3 5.6 5.5 0.9 11.1 C 0.5 11.7 0.7 12.5 1.4 13.1 C 5.4 16.4 13.4 16.9 18.2 13.1 C 21.3 10.6 21.9 5.2 21.3 1.7 C 21.2 1.2 21.0 1.0 20.8 1.0 Z');
+}
+/* Pure #FFFFFF (100%) classic lens surface inside the raised mechanical shutter rim */
+body.spider #i-face i::before,
+body.spider #i-face i::after {
+  content: ""; position: absolute; inset: 0;
+  clip-path: path('M 3.3 3.5 C 8.8 4.1 15.4 7.5 19.0 11.6 C 15.6 14.3 9.2 14.6 5.5 11.5 C 3.2 9.6 2.5 6.1 3.3 3.5 Z');
+  transition: clip-path .16s var(--ease), opacity .14s;
+}
+body.spider #i-face i:last-child::before,
+body.spider #i-face i:last-child::after {
+  clip-path: path('M 18.7 3.5 C 13.2 4.1 6.6 7.5 3.0 11.6 C 6.4 14.3 12.8 14.6 16.5 11.5 C 18.8 9.6 19.5 6.1 18.7 3.5 Z');
+}
+body.spider #i-face i::before {
+  background: #FFFFFF;
+}
+/* Subtle comic-glass diagonal specular gleam across pure white lens */
+body.spider #i-face i::after {
+  background: linear-gradient(126deg, transparent 22%, rgba(232, 237, 245, .58) 35%, transparent 47%, rgba(16, 27, 50, .07) 100%);
+}
+/* Expressive mechanical camera-shutter aperture states */
+body.spider #i-face.squint i { transform: translate(var(--lx), var(--ly)) scaleY(.93); }
+body.spider #i-face.squint i::before, body.spider #i-face.squint i::after {
+  clip-path: path('M 4.9 5.8 C 9.6 6.4 14.7 8.8 17.5 11.5 C 14.6 12.9 9.7 12.9 6.6 10.8 C 4.9 9.5 4.3 7.4 4.9 5.8 Z');
+}
+body.spider #i-face.squint i:last-child::before, body.spider #i-face.squint i:last-child::after {
+  clip-path: path('M 17.1 5.8 C 12.4 6.4 7.3 8.8 4.5 11.5 C 7.4 12.9 12.3 12.9 15.4 10.8 C 17.1 9.5 17.7 7.4 17.1 5.8 Z');
+}
+body.spider #i-face.wide i { transform: translate(var(--lx), var(--ly)) scale(1.12); }
+body.spider #i-face.wide i::before, body.spider #i-face.wide i::after {
+  clip-path: path('M 2.5 2.7 C 8.5 3.2 15.8 6.9 19.6 11.5 C 16.1 14.9 8.9 15.3 4.8 12.0 C 2.4 10.0 1.8 5.6 2.5 2.7 Z');
+}
+body.spider #i-face.wide i:last-child::before, body.spider #i-face.wide i:last-child::after {
+  clip-path: path('M 19.5 2.7 C 13.5 3.2 6.2 6.9 2.4 11.5 C 5.9 14.9 13.1 15.3 17.2 12.0 C 19.6 10.0 20.2 5.6 19.5 2.7 Z');
+}
+body.spider #i-face.blink i,
+body.spider #i-face.wink i:last-child {
+  transform: translate(var(--lx), var(--ly)) scaleY(.16);
+  transition-duration: .065s;
+}
+body.spider #i-face.blink i::before,
+body.spider #i-face.wink i:last-child::before { opacity: .22; transition-duration: .05s; }
+body.spider #i-face.look-l i:first-child { transform: translate(-3.2px, 0) scale(1.03); }
+body.spider #i-face.look-l i:last-child { transform: translate(-3.2px, .3px) scale(.94, .90); }
+body.spider #i-face.look-r i:first-child { transform: translate(3.2px, .3px) scale(.94, .90); }
+body.spider #i-face.look-r i:last-child { transform: translate(3.2px, 0) scale(1.03); }
+body.spider #i-face.sleepy i {
+  width: 22px; height: 17px; border: 0; border-radius: 0;
+  background: linear-gradient(165deg, #1b2844 0%, #101B32 50%, #0a101d 100%);
+  transform: translate(var(--lx), calc(var(--ly) + .6px)) scaleY(.76);
+}
+body.spider #i-face.sleepy i::before, body.spider #i-face.sleepy i::after {
+  clip-path: path('M 5.0 7.2 C 9.6 7.8 14.6 9.6 17.4 11.6 C 14.5 13.2 9.6 13.3 6.5 11.3 C 4.9 10.1 4.4 8.5 5.0 7.2 Z');
+}
+body.spider #i-face.sleepy i:last-child::before, body.spider #i-face.sleepy i:last-child::after {
+  clip-path: path('M 17.0 7.2 C 12.4 7.8 7.4 9.6 4.6 11.6 C 7.5 13.2 12.4 13.3 15.5 11.3 C 17.1 10.1 17.6 8.5 17.0 7.2 Z');
+}
+body.spider #i-face.happy i {
+  width: 22px; height: 17px; border: 0; border-radius: 0;
+  background: linear-gradient(165deg, #1b2844 0%, #101B32 50%, #0a101d 100%);
+  transform: translate(var(--lx), calc(var(--ly) - .6px)) scale(1.03, .94);
+}
+body.spider #i-face.happy i::before, body.spider #i-face.happy i::after {
+  clip-path: path('M 3.2 4.4 C 8.8 3.2 15.5 6.2 19.0 11.2 C 15.0 9.6 9.5 9.4 5.2 10.2 C 3.2 8.8 2.6 6.3 3.2 4.4 Z');
+}
+body.spider #i-face.happy i:last-child::before, body.spider #i-face.happy i:last-child::after {
+  clip-path: path('M 18.8 4.4 C 13.2 3.2 6.5 6.2 3.0 11.2 C 7.0 9.6 12.5 9.4 16.8 10.2 C 18.8 8.8 19.4 6.3 18.8 4.4 Z');
+}
+
+/* ------------------------------------------------ Typography, 3D glass buttons & sculpted 3D icons inside the pill */
+body.spider #island .strong,
+body.spider #island #i-time,
+body.spider #island #t-time,
+body.spider #island #m-title,
+body.spider #island #tm-time,
+body.spider #island #v-num { color: #FFFFFF; }
+body.spider #island #n-body,
+body.spider #island #h-text,
+body.spider #island #in-text,
+body.spider #island #g-pass,
+body.spider #island .hf .nm { color: #E8EDF5; }
+body.spider #island .dim,
+body.spider #island #m-artist,
+body.spider #island #i-shelf { color: rgba(232, 237, 245, .74); }
+body.spider #island #t-date:hover { color: #FFFFFF; }
+body.spider #island #i-time.count,
+body.spider #island #m-timer { color: #FFFFFF; text-shadow: 0 1px 3px rgba(143, 16, 24, .7); }
+body.spider #island #tm-time.done { color: #F04449; }
+body.spider #island .sep { background: rgba(255, 255, 255, .12); box-shadow: 1px 0 0 rgba(16, 27, 50, .35); }
+body.spider #island #in-text { caret-color: #398BE0; color: #FFFFFF; }
+body.spider #island #in-text::placeholder { color: rgba(146, 155, 170, .72); }
+
+/* 3D sculpted icons: cohesive dimensional lift, white crown highlight & deep navy thickness */
+body.spider .ib svg,
+body.spider .glyph svg,
+body.spider .row .ic.plain svg,
+body.spider .row .act svg,
+body.spider .row .pin svg,
+body.spider #stack-head .pillbtn svg,
+body.spider .row.actions button svg {
+  filter: drop-shadow(0 -.45px 0 rgba(255, 255, 255, .36)) drop-shadow(0 1.1px 0 rgba(16, 27, 50, .72)) drop-shadow(0 2px 2.5px rgba(0, 0, 0, .26));
+}
+
+body.spider #island .glyph { color: #E8EDF5; }
+body.spider #island .glyph.blue { color: #398BE0; }
+body.spider #island .glyph.amber,
+body.spider #island .glyph.red { color: #F04449; }
+body.spider #island .glyph.green { color: #E8EDF5; }
+body.spider #island .glyph.faded { color: rgba(146, 155, 170, .75); }
+
+/* Secondary 3D glass buttons inside the island */
+body.spider #island .ib {
+  color: #E8EDF5;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .13) 0%, rgba(255, 255, 255, .07) 100%);
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, .24),
+    inset 0 0 0 1px rgba(255, 255, 255, .14),
+    inset 0 1px 0 rgba(255, 255, 255, .24),
+    inset 0 -1px 1px rgba(16, 27, 50, .34);
+  transition: background .16s var(--ease), transform .22s var(--spring), box-shadow .16s var(--ease), color .15s;
+}
+body.spider #island [data-view="tools"] .ib { margin-left: -1.5px; }
+body.spider #island .ib.small {
+  background: rgba(255, 255, 255, .07);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .11), inset 0 1px 0 rgba(255, 255, 255, .18);
+  color: #E8EDF5;
+}
+body.spider #island .ib:hover {
+  color: #FFFFFF;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .21) 0%, rgba(255, 255, 255, .13) 100%);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, .28),
+    inset 0 0 0 1px rgba(57, 139, 224, .58),
+    inset 0 1px 0 rgba(255, 255, 255, .36);
+  transform: translateY(-.5px) scale(1.06);
+}
+body.spider #island .ib:active {
+  transform: scale(.86);
+  background: rgba(215, 25, 32, .24);
+  box-shadow: inset 0 1px 3px rgba(16, 27, 50, .5), inset 0 0 0 1px rgba(240, 68, 73, .52);
+}
+/* Active toggled secondary button: Spider-Man crimson glass (22-25%) */
+body.spider #island .ib.active,
+body.spider #island #t-track {
+  color: #FFFFFF;
+  background: linear-gradient(180deg, rgba(240, 68, 73, .34) 0%, rgba(215, 25, 32, .24) 100%);
+  box-shadow:
+    0 2px 7px rgba(0, 0, 0, .28),
+    0 0 10px rgba(215, 25, 32, .20),
+    inset 0 0 0 1px rgba(240, 68, 73, .58),
+    inset 0 1px 0 rgba(255, 255, 255, .32);
+}
+/* Primary 3D buttons: classic Spider-Man blue #1261B5 -> hover #398BE0 -> active #174A85 */
+body.spider #island .ib.solid {
+  color: #FFFFFF;
+  background: linear-gradient(180deg, #2175ce 0%, #1261B5 58%, #174A85 100%);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, .32),
+    0 1px 6px rgba(18, 97, 181, .28),
+    inset 0 0 0 1px rgba(255, 255, 255, .20),
+    inset 0 1.2px 0 rgba(255, 255, 255, .38),
+    inset 0 -1.5px 2px rgba(16, 27, 50, .48);
+}
+body.spider #island .ib.solid:hover {
+  color: #FFFFFF;
+  background: linear-gradient(180deg, #55a0ea 0%, #398BE0 62%, #1261B5 100%);
+  box-shadow:
+    0 4px 11px rgba(0, 0, 0, .35),
+    0 2px 10px rgba(57, 139, 224, .32),
+    inset 0 0 0 1px rgba(255, 255, 255, .26),
+    inset 0 1.2px 0 rgba(255, 255, 255, .45);
+  transform: translateY(-.5px) scale(1.1);
+}
+body.spider #island .ib.solid:active {
+  background: #174A85;
+  transform: scale(.88);
+}
+body.spider #island .ib.live { color: #398BE0; }
+
+/* Badges, status tags, dots, album art, volume, seek & flash */
+body.spider .badge {
+  background: linear-gradient(180deg, #F04449, #D71920);
+  color: #FFFFFF;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .38), 0 0 0 1.5px #101B32, inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+body.spider .badge.quiet {
+  background: linear-gradient(180deg, #398BE0, #1261B5);
+  color: #FFFFFF;
+}
+body.spider .badge.dot {
+  background: #398BE0;
+  box-shadow: 0 0 0 2px #101B32;
+}
+body.spider #t-net.tag {
+  background: rgba(18, 97, 181, .28);
+  color: #E8EDF5;
+  box-shadow: inset 0 0 0 1px rgba(57, 139, 224, .58), inset 0 1px 0 rgba(255, 255, 255, .18);
+}
+body.spider #t-net.tag.bad {
+  background: rgba(215, 25, 32, .26);
+  color: #FFFFFF;
+  box-shadow: inset 0 0 0 1px rgba(240, 68, 73, .58);
+}
+body.spider #dots i { box-shadow: 0 0 0 1.5px rgba(16, 27, 50, .82), 0 1px 2px rgba(0, 0, 0, .35); }
+body.spider #dots .off { background: #F04449; }
+body.spider #art {
+  background-color: rgba(16, 27, 50, .55);
+  background-image: linear-gradient(135deg, rgba(215, 25, 32, .62), rgba(18, 97, 181, .68));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .36), inset 0 0 0 1px rgba(255, 255, 255, .22), inset 0 1px 0 rgba(255, 255, 255, .32);
+}
+body.spider #n-icon {
+  background-color: #1261B5;
+  background-image: linear-gradient(135deg, #D71920, #8F1018 46%, #1261B5);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .34), inset 0 0 0 1px rgba(255, 255, 255, .22), inset 0 1px 0 rgba(255, 255, 255, .34);
+}
+body.spider .hf {
+  background: rgba(255, 255, 255, .08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14), inset 0 1px 0 rgba(255, 255, 255, .22), 0 2px 5px rgba(0, 0, 0, .22);
+}
+body.spider .hf:hover {
+  background: rgba(255, 255, 255, .16);
+  box-shadow: inset 0 0 0 1px rgba(57, 139, 224, .58), inset 0 1px 0 rgba(255, 255, 255, .3), 0 3px 8px rgba(0, 0, 0, .28);
+}
+body.spider .hf .rm { background: #D71920; color: #FFFFFF; box-shadow: 0 1px 3px rgba(0, 0, 0, .4), inset 0 0 0 1px rgba(255, 255, 255, .28); }
+body.spider .vbar {
+  height: 6px; border-radius: 3px;
+  background: rgba(16, 27, 50, .52);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .4), inset 0 0 0 1px rgba(255, 255, 255, .14);
+}
+body.spider .vbar i {
+  background: linear-gradient(90deg, #D71920, #F04449 44%, #398BE0 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .38);
+}
+body.spider #seek { z-index: 4; }
+body.spider #seek::before { background: rgba(255, 255, 255, .18); }
+body.spider #seek-fill { background: linear-gradient(90deg, #D71920, #F04449 42%, #398BE0 100%); }
+body.spider #seek-knob {
+  background: #FFFFFF;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, .45), 0 0 0 2px #1261B5;
+}
+body.spider #flash {
+  z-index: 5;
+  background: linear-gradient(132deg, rgba(143, 16, 24, .92), rgba(16, 27, 50, .94) 50%, rgba(18, 97, 181, .92));
+  color: #FFFFFF;
+}
+
+/* Waiting side-notification chip */
+body.spider #side {
+  background: linear-gradient(135deg, rgba(215, 25, 32, .22), rgba(16, 27, 50, .86) 45%, rgba(18, 97, 181, .28));
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  color: #FFFFFF;
+  box-shadow: 0 5px 16px rgba(0, 0, 0, .36), inset 0 0 0 1px rgba(255, 255, 255, .18), inset 0 1px 0 rgba(255, 255, 255, .28);
+}
+body.spider #side:hover {
+  background: linear-gradient(135deg, rgba(240, 68, 73, .28), rgba(16, 27, 50, .88) 45%, rgba(57, 139, 224, .34));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .4), inset 0 0 0 1px rgba(57, 139, 224, .6), inset 0 1px 0 rgba(255, 255, 255, .32);
+}
+body.spider #side .ic {
+  background-color: #1261B5;
+  background-image: linear-gradient(135deg, #D71920, #1261B5);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .24);
+}
+
+/* ------------------------------------------------ Expanded glassmorphic stack & floating 3D cards */
+body.spider #stack {
+  top: 52px;
+  padding: 5px 0 8px;
+  transform-origin: 50% 0;
+  transform: translateY(-8px) scale(.94, .88);
+  transition: opacity .22s var(--ease), transform .44s cubic-bezier(.24, 1.32, .38, 1);
+}
+body.spider #stack.open { transform: none; }
+/* Main semi-transparent Spider-Man glass panel (#101B32 ~82% + diagonal red-blue gradient + 26px blur) */
+body.spider #stack::before {
+  content: ""; position: absolute; z-index: -2; inset: 0 12px; border-radius: 22px; pointer-events: none;
+  background:
+    radial-gradient(210px 140px at var(--sp-sx, 50%) var(--sp-sy, 12%), rgba(255, 255, 255, .12), rgba(57, 139, 224, .08) 45%, transparent 75%),
+    radial-gradient(115% 95% at 0% 0%, rgba(240, 68, 73, .19), transparent 54%),
+    radial-gradient(115% 95% at 100% 100%, rgba(57, 139, 224, .20), transparent 56%),
+    linear-gradient(132deg, rgba(215, 25, 32, .34) 0%, rgba(143, 16, 24, .28) 24%, rgba(16, 27, 50, .44) 50%, rgba(23, 74, 133, .32) 76%, rgba(18, 97, 181, .38) 100%),
+    rgba(16, 27, 50, .82);
+  backdrop-filter: blur(26px) saturate(145%);
+  -webkit-backdrop-filter: blur(26px) saturate(145%);
+  box-shadow:
+    0 14px 32px rgba(0, 0, 0, .42),
+    0 3px 8px rgba(0, 0, 0, .24),
+    -8px 6px 20px rgba(215, 25, 32, .16),
+    8px 8px 20px rgba(18, 97, 181, .18),
+    inset 0 0 0 1px rgba(255, 255, 255, .17),
+    inset 0 1px 0 rgba(255, 255, 255, .28),
+    inset 0 -1.5px 3px rgba(16, 27, 50, .55);
+}
+/* Whisper-subtle geometric spider-web detail (6% white) with gentle mouse parallax */
+body.spider #stack::after {
+  content: ""; position: absolute; z-index: -1; inset: 1px 13px; border-radius: 21px; pointer-events: none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150' fill='none' stroke='%23FFFFFF' stroke-opacity='0.065' stroke-width='0.9'%3E%3Cpath d='M0 0L148 22M0 0L138 66M0 0L106 106M0 0L66 138M0 0L22 148'/%3E%3Cpath d='M36 5Q29 14 33 17Q24 22 25 25Q17 26 16 33Q10 29 5 36'/%3E%3Cpath d='M72 11Q60 24 67 32Q51 42 52 52Q38 54 32 67Q21 61 11 72'/%3E%3Cpath d='M110 16Q93 36 103 49Q80 65 80 80Q59 83 49 103Q33 94 16 110'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140' fill='none' stroke='%23FFFFFF' stroke-opacity='0.055' stroke-width='0.9'%3E%3Cpath d='M140 140L6 118M140 140L16 76M140 140L42 42M140 140L76 16M140 140L118 6'/%3E%3Cpath d='M102 134Q108 122 104 118Q114 112 112 108Q120 107 122 100Q128 104 134 98'/%3E%3Cpath d='M64 128Q76 112 68 104Q84 94 84 84Q98 81 104 68Q115 74 128 64'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: calc(0% + var(--sp-px, 0px)) calc(0% + var(--sp-py, 0px)), calc(100% + var(--sp-px, 0px)) calc(100% + var(--sp-py, 0px));
+}
+body.spider #stack-list { padding: 5px 22px 8px; gap: 6px; max-height: 258px; }
+body.spider #stack-head { padding: 5px 22px 3px; }
+body.spider #stack-clear { margin-top: 2px; margin-bottom: 2px; }
+
+/* Floating 3D glass cards (9% white primary, 6% secondary, 14% hover, 22-28% #1261B5 selected) */
+body.spider #stack .row {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .105) 0%, rgba(255, 255, 255, .07) 100%);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, .24),
+    0 1px 2px rgba(0, 0, 0, .18),
+    inset 0 0 0 1px rgba(255, 255, 255, .14),
+    inset 0 1px 0 rgba(255, 255, 255, .22),
+    inset 0 -1px 1px rgba(16, 27, 50, .28);
+  transition: transform .26s var(--spring), background .16s var(--ease), box-shadow .16s var(--ease);
+}
+body.spider #stack.fresh .row {
+  animation: sp-card .44s cubic-bezier(.24, 1.32, .38, 1) both;
+  animation-delay: calc(var(--i, 0) * 42ms);
+}
+@keyframes sp-card { from { opacity: 0; transform: translateY(-14px) scale(.93); } }
+
+body.spider #stack .row:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .165) 0%, rgba(255, 255, 255, .115) 100%);
+  transform: translateY(-1px) scale(1.014);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, .28),
+    0 2px 10px rgba(18, 97, 181, .16),
+    inset 0 0 0 1px rgba(57, 139, 224, .58),
+    inset 0 1px 0 rgba(255, 255, 255, .30);
+}
+body.spider #stack .row.set {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .082) 0%, rgba(255, 255, 255, .05) 100%);
+  box-shadow:
+    0 3px 9px rgba(0, 0, 0, .20),
+    inset 0 0 0 1px rgba(255, 255, 255, .12),
+    inset 0 1px 0 rgba(255, 255, 255, .18);
+}
+body.spider #stack .row.set:hover {
+  transform: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .115) 0%, rgba(255, 255, 255, .072) 100%);
+  box-shadow:
+    0 4px 11px rgba(0, 0, 0, .24),
+    inset 0 0 0 1px rgba(255, 255, 255, .18),
+    inset 0 1px 0 rgba(255, 255, 255, .24);
+}
+body.spider #stack .row.empty,
+body.spider #stack .row.actions,
+body.spider #stack .row.set.info {
+  background: transparent; box-shadow: none; color: #929BAA; transform: none;
+}
+body.spider #stack .row.empty:hover,
+body.spider #stack .row.actions:hover,
+body.spider #stack .row.set.info:hover {
+  background: transparent; box-shadow: none; transform: none;
+}
+body.spider #stack .row .mqbox,
+body.spider #stack .row.clip .mqbox,
+body.spider #stack .row.set .lbl { color: #E8EDF5; }
+body.spider #stack .row .mqbox b,
+body.spider #stack .row.set.sp .lbl b,
+body.spider #stack .row.set .num { color: #FFFFFF; }
+body.spider #stack .row .dim,
+body.spider #stack .row .app,
+body.spider #stack .row .tm,
+body.spider #stack .row .who,
+body.spider #stack .swn { color: #929BAA; }
+body.spider #stack .row.note.done .mqbox { color: rgba(146, 155, 170, .48); }
+
+/* Selected, active, pinned & update cards */
+body.spider #stack .row.vault.sel,
+body.spider #stack .row.loc.cur {
+  background: linear-gradient(135deg, rgba(18, 97, 181, .30), rgba(18, 97, 181, .22));
+  box-shadow:
+    0 5px 15px rgba(0, 0, 0, .28),
+    0 2px 10px rgba(18, 97, 181, .18),
+    inset 0 0 0 1.5px rgba(57, 139, 224, .66),
+    inset 0 1px 0 rgba(255, 255, 255, .26);
+}
+body.spider #stack .row.pinned {
+  background: linear-gradient(135deg, rgba(215, 25, 32, .20), rgba(255, 255, 255, .065));
+  box-shadow:
+    0 4px 13px rgba(0, 0, 0, .26),
+    0 2px 8px rgba(215, 25, 32, .14),
+    inset 0 0 0 1px rgba(240, 68, 73, .52),
+    inset 0 1px 0 rgba(255, 255, 255, .22);
+}
+body.spider #stack .row .pin { color: rgba(146, 155, 170, .65); }
+body.spider #stack .row .pin:hover { background: rgba(255, 255, 255, .15); color: #FFFFFF; }
+body.spider #stack .row.pinned .pin { color: #F04449; }
+
+/* 3D icon badges & medallions in stack rows */
+body.spider #stack .row .ic:not(.plain),
+body.spider #stack .row.vault .ic {
+  color: #FFFFFF;
+  background-color: #1261B5;
+  background-image: linear-gradient(142deg, #F04449 0%, #D71920 44%, #1261B5 100%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .30), inset 0 0 0 1px rgba(255, 255, 255, .22), inset 0 1px 0 rgba(255, 255, 255, .36);
+}
+body.spider #stack .row.tour.can:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .165) 0%, rgba(255, 255, 255, .11) 100%);
+  transform: translateY(-1px) scale(1.014);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .28), inset 0 0 0 1px rgba(57, 139, 224, .58), inset 0 1px 0 rgba(255, 255, 255, .3);
+}
+body.spider #stack .row.tour .ic.plain {
+  color: #FFFFFF;
+  background: linear-gradient(155deg, #F04449 0%, #D71920 58%, #8F1018 100%);
+  box-shadow: 0 3px 7px rgba(0, 0, 0, .30), inset 0 0 0 1px rgba(255, 255, 255, .22), inset 0 1.2px 0 rgba(255, 255, 255, .38), inset 0 -1.5px 2px rgba(16, 27, 50, .42);
+}
+body.spider #stack .row.tour:nth-child(odd) .ic.plain {
+  background: linear-gradient(155deg, #398BE0 0%, #1261B5 58%, #174A85 100%);
+}
+body.spider #stack .row.set.upd {
+  background: linear-gradient(135deg, rgba(18, 97, 181, .26), rgba(255, 255, 255, .07));
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .28), inset 0 0 0 1.5px rgba(57, 139, 224, .62), inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+body.spider #stack .row.set.upd .ic.plain {
+  color: #FFFFFF;
+  background: linear-gradient(155deg, #398BE0, #1261B5 62%, #174A85);
+  box-shadow: 0 3px 7px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .36);
+}
+body.spider #stack .row .chip {
+  background: rgba(18, 97, 181, .24);
+  color: #E8EDF5;
+  box-shadow: inset 0 0 0 1px rgba(57, 139, 224, .45), inset 0 1px 0 rgba(255, 255, 255, .15);
+}
+body.spider #stack .row .chip.off {
+  background: rgba(255, 255, 255, .06);
+  color: rgba(146, 155, 170, .55);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
+}
+body.spider #stack .row .keys,
+body.spider #stack .cc {
+  background: rgba(255, 255, 255, .09);
+  color: #E8EDF5;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15), inset 0 1px 0 rgba(255, 255, 255, .22), 0 1px 3px rgba(0, 0, 0, .2);
+}
+body.spider #stack .row .act,
+body.spider #stack .row .x { color: #E8EDF5; }
+body.spider #stack .row .act:hover { background: rgba(57, 139, 224, .24); color: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(57, 139, 224, .5); }
+body.spider #stack .row .x:hover { background: rgba(215, 25, 32, .26); color: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(240, 68, 73, .52); }
+body.spider #stack .row .act.ok { color: #FFFFFF; background: #1261B5; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3); }
+body.spider #stack .row.vault .x.sure { background: linear-gradient(180deg, #F04449, #D71920); color: #FFFFFF; }
+
+/* Switches, segmented controls, search bar & stack buttons */
+body.spider #stack .sw {
+  background: rgba(23, 26, 34, .72);
+  box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, .42), inset 0 0 0 1px rgba(255, 255, 255, .14);
+}
+body.spider #stack .sw::after {
+  background: linear-gradient(180deg, #FFFFFF, #E8EDF5);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .35), inset 0 1px 0 #FFFFFF;
+}
+body.spider #stack .sw.on,
+body.spider #stack .sw.big.on {
+  background: linear-gradient(110deg, #D71920 0%, #1261B5 66%, #398BE0 100%);
+  box-shadow: 0 2px 7px rgba(18, 97, 181, .24), inset 0 0 0 1px rgba(255, 255, 255, .20), inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+body.spider #stack .seg {
+  background: rgba(23, 26, 34, .72);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35), inset 0 0 0 1px rgba(255, 255, 255, .12);
+}
+body.spider #stack .seg button { color: #E8EDF5; transition: background .15s, color .15s, box-shadow .15s; }
+body.spider #stack .seg button:hover { color: #FFFFFF; background: rgba(255, 255, 255, .08); }
+body.spider #stack .seg button.on,
+body.spider #stack .row.set .go.solid {
+  background: linear-gradient(180deg, #2175ce 0%, #1261B5 62%, #174A85 100%);
+  color: #FFFFFF; font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .28), inset 0 0 0 1px rgba(255, 255, 255, .20), inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+body.spider #stack .row.set .go.solid:hover {
+  background: linear-gradient(180deg, #529ee9, #398BE0);
+  color: #FFFFFF;
+}
+body.spider #stack .row.set .go,
+body.spider #stack-clear,
+body.spider #stack-head .pillbtn,
+body.spider #stack .row.actions button {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .13) 0%, rgba(255, 255, 255, .08) 100%);
+  color: #E8EDF5;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, .24), inset 0 0 0 1px rgba(255, 255, 255, .16), inset 0 1px 0 rgba(255, 255, 255, .24);
+  transition: background .15s, color .15s, box-shadow .15s, transform .22s var(--spring);
+}
+body.spider #stack .row.set .go:hover,
+body.spider #stack-clear:hover,
+body.spider #stack-head .pillbtn:hover,
+body.spider #stack .row.actions button:hover {
+  background: linear-gradient(180deg, #529ee9 0%, #398BE0 55%, #1261B5 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .30), 0 2px 8px rgba(57, 139, 224, .26), inset 0 0 0 1px rgba(255, 255, 255, .24), inset 0 1px 0 rgba(255, 255, 255, .4);
+}
+body.spider #stack .row.set .go:active,
+body.spider #stack-clear:active,
+body.spider #stack-head .pillbtn:active { background: #174A85; color: #FFFFFF; }
+body.spider #stack .sws button.on { box-shadow: 0 0 0 1.5px #101B32, 0 0 0 3px #398BE0; }
+body.spider #stack-head .search {
+  background: rgba(23, 26, 34, .72);
+  color: #929BAA;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .24), inset 0 1px 2px rgba(0, 0, 0, .32), inset 0 0 0 1px rgba(255, 255, 255, .15);
+}
+body.spider #stack-head .search:focus-within {
+  color: #398BE0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .28), inset 0 0 0 1.5px rgba(57, 139, 224, .68), 0 0 12px rgba(57, 139, 224, .18);
+}
+body.spider #stack-head input { color: #FFFFFF; caret-color: #398BE0; }
+body.spider #stack-head input::placeholder { color: rgba(146, 155, 170, .62); }
+body.spider #stack .ib.small {
+  color: #E8EDF5; background: rgba(255, 255, 255, .08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14), inset 0 1px 0 rgba(255, 255, 255, .22);
+}
+body.spider #stack .ib.small:hover {
+  color: #FFFFFF; background: rgba(57, 139, 224, .32);
+  box-shadow: inset 0 0 0 1px rgba(57, 139, 224, .6), inset 0 1px 0 rgba(255, 255, 255, .3);
+}
+body.spider #stack .row .thumb { box-shadow: 0 2px 6px rgba(0, 0, 0, .28), inset 0 0 0 1px rgba(255, 255, 255, .18); }
+body.spider #g-sym.off { color: rgba(146, 155, 170, .45); opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  body.spider [data-view="tools"].on .ib,
+  body.spider #stack.fresh .row { animation: none; }
+  body.spider #stack { transition: opacity .15s; transform: none; }
+}
