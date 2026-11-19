@@ -167,6 +167,7 @@ function render() {
   if (island.dataset.w !== String(w)) {
     const prevW = Number(island.dataset.w) || 0;
     if (prevW >= 68 && w - prevW >= 38) triggerPillShoot(prevW, w);
+    if (prevW >= 68 && Math.abs(w - prevW) >= 34) triggerIronPill(prevW, w, w > prevW ? 'open' : 'close');
     island.dataset.w = w;
     island.style.width = w + 'px';
     glow.style.width = w + 50 + 'px'; glow.style.marginLeft = -(w + 50) / 2 + 'px';
@@ -484,6 +485,7 @@ function setStack(open, kind) {
   if (st.stackOpen === open && (!open || kind === st.stackKind)) return;
   if (st.stackOpen && st.stackKind === 'vault') releaseKeys(true);      // leaving the passwords: the keyboard goes back
   if (open && kind === 'vault') { st.vaultQ = ''; st.vaultSel = 0; stackHead.dataset.kind = ''; }
+  const prevRect = !open ? stackEl.getBoundingClientRect() : null;
   st.stackOpen = open;
   if (open) st.stackKind = kind;
   stackEl.classList.toggle('open', open);
@@ -504,6 +506,9 @@ function setStack(open, kind) {
     stackList.scrollTop = 0;
     stackEl.classList.add('fresh'); clearTimeout(freshT); freshT = setTimeout(() => stackEl.classList.remove('fresh'), 800);
     triggerStackShoot();
+    triggerIronStack('open');
+  } else {
+    triggerIronStack('close', prevRect);
   }
   render();
 }
@@ -631,7 +636,7 @@ const THEMES = {
   water: { name: 'Water', pal: ['#0b5fd6', '#1aa6e8', '#5fe0e6'] },
   lava: { name: 'Lava', pal: ['#e02a0c', '#ff7a18', '#ffd24a'] },
   ice: { name: 'Ice', pal: ['#5aa9e6', '#9fd3f7', '#e9f6ff'] },
-  jarvis: { name: 'J.A.R.V.I.S.', pal: ['#087f9d', '#28d8ec', '#a5f6ff'] },
+  jarvis: { name: 'Iron Man', pal: ['#C4161C', '#E8BE62', '#5CE1FF'] },
   spider: { name: 'Spider-Man', pal: ['#D71920', '#1261B5', '#398BE0'] },
 };
 const palette = DEFAULT_PAL;
@@ -897,58 +902,6 @@ function paintLiquid(g, t, x0, x1, W, A, P) {
 }
 const PAINT = {
   sky: paintSky,
-  // A restrained holographic instrument panel: fine graph lines, twin reticles and a slow scanner.
-  // It stays inside the existing pill so the theme never obscures the desktop or its controls.
-  jarvis(g, t, dt, x0, x1, W, A) {
-    const left = Math.ceil(x0), right = Math.floor(x1);
-    g.save();
-    g.globalAlpha = A;
-    g.lineWidth = 0.55;
-    g.strokeStyle = 'rgba(83, 221, 242, .12)';
-    g.beginPath();
-    for (let x = left + 5; x < right; x += 12) { g.moveTo(x, 5); g.lineTo(x, SKY_H - 5); }
-    g.moveTo(left + 5, SKY_H / 2); g.lineTo(right - 5, SKY_H / 2);
-    g.stroke();
-
-    const reticle = (cx, cy, r, phase) => {
-      g.save();
-      g.translate(cx, cy);
-      g.strokeStyle = 'rgba(107, 235, 250, .38)';
-      g.lineWidth = 0.75;
-      g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.stroke();
-      g.globalAlpha = A * 0.72;
-      g.setLineDash([1.5, 2.8]);
-      g.beginPath(); g.arc(0, 0, r - 2.5, 0, Math.PI * 2); g.stroke();
-      g.setLineDash([]);
-      g.rotate(phase);
-      g.strokeStyle = 'rgba(117, 243, 255, .82)';
-      g.beginPath();
-      g.moveTo(0, -r - 1); g.lineTo(0, -r + 2.2);
-      g.moveTo(0, r - 2.2); g.lineTo(0, r + 1);
-      g.moveTo(-r - 1, 0); g.lineTo(-r + 2.2, 0);
-      g.moveTo(r - 2.2, 0); g.lineTo(r + 1, 0);
-      g.stroke();
-      g.fillStyle = '#8bf5ff';
-      g.shadowColor = '#22d9f2'; g.shadowBlur = 5;
-      g.beginPath(); g.arc(0, 0, 1, 0, Math.PI * 2); g.fill();
-      g.restore();
-    };
-    const cy = SKY_H / 2;
-    reticle(left + 14, cy, 6.2, reducedMotion ? 0 : t * 0.00032);
-    if (W > 112) reticle(right - 14, cy, 6.2, reducedMotion ? 0 : -t * 0.00024);
-
-    // A fine scan glides along the capsule edge; it is deliberately faint beneath text and controls.
-    const span = Math.max(1, W - 20), scanX = reducedMotion ? left + W / 2 : left + 10 + ((t * 0.022) % span);
-    const beam = g.createLinearGradient(scanX - 13, 0, scanX + 13, 0);
-    beam.addColorStop(0, 'rgba(40,216,236,0)');
-    beam.addColorStop(0.5, 'rgba(93,239,255,.36)');
-    beam.addColorStop(1, 'rgba(40,216,236,0)');
-    g.globalAlpha = A * (reducedMotion ? 0.3 : 0.55 + 0.2 * Math.sin(t * 0.001));
-    g.fillStyle = beam;
-    g.fillRect(scanX - 13, 3, 26, 1);
-    g.fillRect(scanX - 9, SKY_H - 4, 18, 0.7);
-    g.restore();
-  },
   // a dark galaxy: clouds of magenta and violet drifting over black, a few stars
   nebula(g, t, dt, x0, x1, W, A) {
     g.globalAlpha = A; g.fillStyle = '#08030f'; g.fillRect(x0, 0, W, SKY_H);
@@ -1876,18 +1829,1458 @@ const spBusy = (t) => spOn && (
   Math.abs(spBug.om) > 0.08
 );
 
+// ============================================================ Iron Man / Stark Atelier 3D skin
+// Sculpted 3D candy-apple crimson & satin 18K champagne-gold Mark-series armor plating, brushed
+// silver-titanium slide rails & micro-hinges, volumetric 3-plane holographic Arc Reactor,
+// articulated 3D floating nano-chevron wing plates, whisper-clean cyan holographic scan arcs,
+// dark-at-rest proximity-powered mask eye slits, and 7-stage bidirectional mechanical + nanotech
+// deployment and reverse retraction — rendered at 2x Retina across #sky and #fx.
+const FX_IM_H = 428;
+function sizeImFx(on) {
+  const dpr = on ? (window.devicePixelRatio || 1) : 1;
+  fx.width = Math.round(FX_W * dpr);
+  fx.height = Math.round((on ? FX_IM_H : 110) * dpr);
+  fxG.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', () => { if (imOn) sizeImFx(true); });
+let imOn = false, imExp = 0, imPrevW = 0;
+let imCurX = FX_W / 2, imCurY = -999, imCurAt = -9999, imCurIn = false, imCurIpc = false;
+let imEye = 0, imLx = 0, imLy = 0, imMx = 0, imMy = 0, imMa = 0;
+let imBrushPat = null, imHexPat = null;
+const imPillTr = { at: -9999, dur: 820, fromW: 98, toW: 98, dir: 'open' };
+const imStackTr = { at: -9999, dur: 880, dir: 'open', top: 70, w: 452, h: 250 };
+
+// 16 coordinated 3D crimson & gold nanotech chevron facets arranged in paired left/right ranks
+const IM_NANO_SPECS = Array.from({ length: 16 }, (_, i) => {
+  const side = i < 8 ? -1 : 1, idx = i % 8;
+  const row = (idx % 3) - 1;
+  return {
+    side, idx, row,
+    gold: idx % 2 === 1,
+    delay: idx * 0.044,
+    w: 9.8 - (idx % 3) * 1.1,
+    h: 4.5 - (idx % 2) * 0.5,
+    arc: (row === 0 ? (idx % 2 ? -1 : 1) * 10 : row * 15),
+    spin: side * (idx % 2 ? 0.85 : -0.72),
+    tFrac: 0.14 + (idx / 7) * 0.78,
+  };
+});
+
+const imClamp01 = (v) => v <= 0 ? 0 : v >= 1 ? 1 : v;
+const imSmooth = (a, b, x) => { const u = imClamp01((x - a) / (b - a)); return u * u * (3 - 2 * u); };
+const imEaseOut = (x) => { const u = imClamp01(x); return 1 - Math.pow(1 - u, 3); };
+const imEaseInOut = (x) => { const u = imClamp01(x); return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; };
+const imMechSettle = (x) => {
+  const u = imClamp01(x);
+  if (u >= 1) return 1;
+  if (u < 0.8) return imEaseOut(u / 0.8) * 1.022;
+  return 1.022 - 0.022 * imSmooth(0.8, 1, u);
+};
+
+function ensureImPatterns() {
+  if (imBrushPat) return;
+  // Fine anisotropic brushed champagne-titanium satin grain
+  const bc = document.createElement('canvas'); bc.width = 48; bc.height = 24;
+  const bg = bc.getContext('2d');
+  for (let y = 0; y < 24; y++) {
+    const a = (y * 7 % 5 === 0) ? 0.045 : (y % 2 === 0 ? 0.022 : 0);
+    if (!a) continue;
+    bg.fillStyle = y % 3 === 0 ? `rgba(255,244,210,${a})` : `rgba(20,8,12,${a * 0.9})`;
+    bg.fillRect(0, y, 48, 0.75);
+  }
+  imBrushPat = skyG.createPattern(bc, 'repeat');
+
+  // Subtle Stark micro-hexagonal armor weave
+  const hc = document.createElement('canvas'); hc.width = 18; hc.height = 15.6;
+  const hg = hc.getContext('2d');
+  hg.strokeStyle = 'rgba(255, 232, 174, .055)';
+  hg.lineWidth = 0.55;
+  const hex = (ox, oy, r) => {
+    hg.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const ang = k * Math.PI / 3;
+      const px = ox + Math.cos(ang) * r, py = oy + Math.sin(ang) * r;
+      if (k) hg.lineTo(px, py); else hg.moveTo(px, py);
+    }
+    hg.closePath(); hg.stroke();
+  };
+  hex(4.5, 4.2, 4.1); hex(13.5, 11.9, 4.1);
+  imHexPat = skyG.createPattern(hc, 'repeat');
+}
+
+function triggerIronPill(fromW, toW, dir) {
+  if (lookNow !== 'jarvis' || reducedMotion) return;
+  imPillTr.at = performance.now();
+  imPillTr.dur = 840;
+  imPillTr.fromW = fromW;
+  imPillTr.toW = toW;
+  imPillTr.dir = dir;
+}
+
+function triggerIronStack(dir, prevRect) {
+  if (lookNow !== 'jarvis' || reducedMotion) return;
+  const r = dir === 'open' ? stackEl.getBoundingClientRect() : prevRect;
+  imStackTr.at = performance.now();
+  imStackTr.dur = 900;
+  imStackTr.dir = dir;
+  imStackTr.top = (r && r.height > 24 ? r.top : 70);
+  imStackTr.w = (r && r.width > 120 ? r.width : 452);
+  imStackTr.h = clamp(r && r.height > 28 ? r.height : 248, 86, 336);
+}
+
+function updateIronInput(t, dt) {
+  const cx = FX_W / 2;
+  const W = island.clientWidth || 98;
+  const halfW = W * 0.5;
+  // The native cursor bridge reports movement, not a heartbeat: keep a stationary cursor active
+  // until it moves out of range rather than extinguishing the eyes after a timeout.
+  const fresh = imCurIn && imCurY > -85 && imCurY < 515;
+
+  // Collapsed mask eye proximity illumination: strictly 0 at rest, gradual white/ice-blue ignition on approach
+  let wantEye = 0, wantLx = 0, wantLy = 0;
+  if (cur === 'idle' && !st.tucked && fresh) {
+    const ex = Math.max(0, Math.abs(imCurX - cx) - halfW);
+    const ey = imCurY < 8 ? 8 - imCurY : imCurY > 44 ? imCurY - 44 : 0;
+    const edgeD = Math.hypot(ex, ey);
+    const nearR = 14, farR = 238;
+    if (edgeD < farR) {
+      const s = imSmooth(0, 1, 1 - (edgeD - nearR) / (farR - nearR));
+      wantEye = s * (0.24 + 0.76 * s);
+      const dx = imCurX - cx, dy = imCurY - 25, cd = Math.hypot(dx, dy);
+      if (cd > 1) {
+        const gk = imSmooth(0, 1, Math.min(1, cd / 95)) * (0.35 + 0.65 * s);
+        wantLx = (dx / cd) * 1.55 * gk;
+        wantLy = (dy / cd) * 0.85 * gk;
+      }
+    }
+  }
+  if (cur !== 'idle' || st.tucked) { wantEye = 0; wantLx = 0; wantLy = 0; }
+
+  const eyeRate = reducedMotion ? 11 : (wantEye > imEye ? 7.2 : 4.1);
+  imEye += (wantEye - imEye) * (1 - Math.exp(-dt * eyeRate));
+  if (imEye < 0.0025 && wantEye === 0) imEye = 0;
+  if (imEye > 0.997 && wantEye === 1) imEye = 1;
+
+  const gazeK = 1 - Math.exp(-dt * 9);
+  imLx += (wantLx - imLx) * gazeK;
+  imLy += (wantLy - imLy) * gazeK;
+  if (Math.abs(imLx) < 0.005) imLx = 0;
+  if (Math.abs(imLy) < 0.005) imLy = 0;
+
+  // Damped studio specular & 3D parallax (restrained, smooth, zero jitter)
+  const wantMx = fresh && !reducedMotion ? clamp((imCurX - cx) / 260, -1, 1) : 0;
+  const wantMy = fresh && !reducedMotion ? clamp((imCurY - (st.stackOpen ? 165 : 52)) / 210, -1, 1) : 0;
+  const wantMa = fresh ? imSmooth(340, 40, Math.hypot(imCurX - cx, imCurY - (st.stackOpen ? 150 : 34))) : 0;
+  const mk = 1 - Math.exp(-dt * 5.2);
+  imMx += (wantMx - imMx) * mk;
+  imMy += (wantMy - imMy) * mk;
+  imMa += (wantMa - imMa) * (1 - Math.exp(-dt * 4.5));
+  if (imMa < 0.003 && wantMa === 0) imMa = 0;
+
+  const bs = document.body.style;
+  bs.setProperty('--im-eye', imEye.toFixed(3));
+  bs.setProperty('--im-lx', imLx.toFixed(2) + 'px');
+  bs.setProperty('--im-ly', imLy.toFixed(2) + 'px');
+  bs.setProperty('--im-fx', (50 + imLx * 7.5).toFixed(1) + '%');
+  bs.setProperty('--im-fy', (48 + imLy * 11).toFixed(1) + '%');
+  bs.setProperty('--im-mx', (50 + imMx * 38).toFixed(1) + '%');
+  bs.setProperty('--im-my', (28 + imMy * 24).toFixed(1) + '%');
+  bs.setProperty('--im-ma', imMa.toFixed(3));
+  bs.setProperty('--im-sx', (50 + imMx * 32).toFixed(1) + '%');
+  bs.setProperty('--im-sy', (18 + imMy * 22).toFixed(1) + '%');
+  bs.setProperty('--im-px', (-imMx * 2.4).toFixed(2) + 'px');
+  bs.setProperty('--im-py', (-imMy * 1.6).toFixed(2) + 'px');
+}
+
+// #sky painter: 3D sculpted candy-apple crimson & brushed 18K champagne-gold Mark-series armor
+PAINT.jarvis = function paintIronManSky(g, t, dt, x0, x1, W, A) {
+  ensureImPatterns();
+  const H = SKY_H, mid = (x0 + x1) * 0.5, sec = reducedMotion ? 0 : t * 0.001;
+  const wantExp = cur === 'idle' ? 0 : 1;
+  imExp += (wantExp - imExp) * Math.min(1, (dt || 0.016) * 8.5);
+  const specShift = imMx * (10 + W * 0.08);
+
+  g.save();
+  g.globalAlpha = A;
+  g.beginPath(); g.rect(x0 - 1, 0, W + 2, H); g.clip();
+
+  // ---- A. COLLAPSED MODE: 3D sculpted crimson & brushed 18K gold eye-bridge armor (ONLY mask eyes)
+  if (imExp < 0.992) {
+    g.save();
+    g.globalAlpha = A * (1 - imExp);
+
+    // 1. Deep 3D automotive candy-apple metallic crimson armor shell
+    const redBase = g.createLinearGradient(x0, 0, x0, H);
+    redBase.addColorStop(0, '#F1423A');
+    redBase.addColorStop(0.22, '#D72228');
+    redBase.addColorStop(0.58, '#A91117');
+    redBase.addColorStop(1, '#68080D');
+    g.fillStyle = redBase;
+    g.fillRect(x0, 0, W, H);
+
+    // Cylindrical 3D sunlit studio highlight across the crimson crown
+    const redCrown = g.createRadialGradient(mid + imMx * 12, 4, 2, mid, 14, W * 0.62);
+    redCrown.addColorStop(0, 'rgba(255, 198, 174, .34)');
+    redCrown.addColorStop(0.45, 'rgba(244, 70, 60, .14)');
+    redCrown.addColorStop(1, 'rgba(52, 4, 8, .28)');
+    g.fillStyle = redCrown;
+    g.fillRect(x0, 0, W, H);
+
+    // 2. Seamless sculpted 3D Mark LXXXV brushed 18K champagne-gold eye-visor plate
+    // Features the iconic crimson V-brow crest dipping down at top center & swept crimson temple flanks
+    // (pure abstract eye-bridge armor curvature — NEVER a full mask, face, mouth, or helmet)
+    const visorBand = () => {
+      g.beginPath();
+      g.moveTo(mid, 10.6);                          // iconic central crimson V-crest apex between the brows
+      g.lineTo(mid + 9.5, 4.6);                     // right inner brow peak
+      g.lineTo(mid + 33.8, 5.2);                    // right outer temple brow
+      g.quadraticCurveTo(mid + 38.2, 13.5, mid + 35.2, 23.6); // sculpted right cheek contour
+      g.lineTo(mid + 26.8, 31.2);                   // right lower chamfer
+      g.lineTo(mid + 6.5, 31.8);
+      g.lineTo(mid, 30.2);                          // subtle central lower notch
+      g.lineTo(mid - 6.5, 31.8);
+      g.lineTo(mid - 26.8, 31.2);                   // left lower chamfer
+      g.lineTo(mid - 35.2, 23.6);                   // sculpted left cheek contour
+      g.quadraticCurveTo(mid - 38.2, 13.5, mid - 33.8, 5.2);  // left outer temple brow
+      g.lineTo(mid - 9.5, 4.6);                     // left inner brow peak
+      g.closePath();
+    };
+
+    // Deep recessed drop shadow seating the sculpted gold visor plate inside the crimson armor shell
+    g.save();
+    g.translate(0, 1.25);
+    visorBand();
+    g.fillStyle = 'rgba(20, 4, 7, .62)';
+    g.fill();
+    g.restore();
+
+    // 3D cylindrically shaded satin 18K champagne-gold metallic finish
+    const goldCyl = g.createLinearGradient(mid - 37, 4, mid + 37, 31);
+    goldCyl.addColorStop(0, '#9E6A18');
+    goldCyl.addColorStop(0.18, '#DDA94A');
+    goldCyl.addColorStop(0.38, '#F8DF95');
+    goldCyl.addColorStop(0.5, '#FFF5CE');
+    goldCyl.addColorStop(0.62, '#F7DC90');
+    goldCyl.addColorStop(0.82, '#DAA546');
+    goldCyl.addColorStop(1, '#986416');
+
+    const goldVert = g.createLinearGradient(0, 4, 0, 32);
+    goldVert.addColorStop(0, 'rgba(255, 252, 236, .36)');
+    goldVert.addColorStop(0.36, 'rgba(255, 238, 186, .08)');
+    goldVert.addColorStop(0.74, 'rgba(124, 76, 12, .16)');
+    goldVert.addColorStop(1, 'rgba(58, 30, 5, .44)');
+
+    g.save();
+    visorBand();
+    g.fillStyle = goldCyl; g.fill();
+    g.fillStyle = goldVert; g.fill();
+    if (imBrushPat) { g.fillStyle = imBrushPat; g.fill(); }
+
+    // Moving studio specular sheen across the cylindrical brushed gold plate
+    const gSpec = g.createRadialGradient(mid + imMx * 14, 9 + imMy * 3, 2, mid + imMx * 8, 15, 34);
+    gSpec.addColorStop(0, 'rgba(255, 255, 246, .42)');
+    gSpec.addColorStop(0.55, 'rgba(255, 242, 198, .12)');
+    gSpec.addColorStop(1, 'rgba(255, 242, 198, 0)');
+    g.fillStyle = gSpec; g.fill();
+
+    // Subtle 3D sculpted central nose-bridge ridge catch-light (gives authentic curved metallic volume)
+    const ridge = g.createLinearGradient(mid - 3.5, 0, mid + 3.5, 0);
+    ridge.addColorStop(0, 'rgba(130, 82, 16, 0)');
+    ridge.addColorStop(0.42, 'rgba(255, 252, 236, .34)');
+    ridge.addColorStop(0.58, 'rgba(120, 74, 14, .18)');
+    ridge.addColorStop(1, 'rgba(130, 82, 16, 0)');
+    g.fillStyle = ridge;
+    g.fillRect(mid - 3.5, 11, 7, 19);
+
+    // Sculpted 3D recessed eye-socket chamfers directly hugging the two mask eye slits
+    for (const s of [-1, 1]) {
+      g.save();
+      // Subtle recessed bronze brow overhang right above each eye slit
+      const ex = mid + s * 18, ey = 17.2;
+      g.fillStyle = 'rgba(54, 30, 6, .34)';
+      g.beginPath();
+      g.moveTo(mid + s * 5.8, 15.8);
+      g.lineTo(mid + s * 30.8, 12.2);
+      g.lineTo(mid + s * 31.2, 15.4);
+      g.lineTo(mid + s * 19.5, 22.4);
+      g.lineTo(mid + s * 5.6, 20.6);
+      g.closePath();
+      g.fill();
+
+      // Fine champagne-white lower eyelid bevel highlight catching overhead studio light
+      g.strokeStyle = 'rgba(255, 252, 234, .65)';
+      g.lineWidth = 0.72;
+      g.beginPath();
+      g.moveTo(mid + s * 6.8, 21.6);
+      g.lineTo(mid + s * 24.8, 20.2);
+      g.lineTo(mid + s * 30.2, 16.4);
+      g.stroke();
+
+      // Realistic ice-blue optical bounce on brushed gold ONLY when cursor proximity lights the eyes
+      if (imEye > 0.01) {
+        const bounce = g.createRadialGradient(ex, ey, 2, ex, ey + 1.5, 19);
+        bounce.addColorStop(0, `rgba(235, 252, 255, ${(imEye * 0.52).toFixed(3)})`);
+        bounce.addColorStop(0.48, `rgba(82, 218, 255, ${(imEye * 0.28).toFixed(3)})`);
+        bounce.addColorStop(1, 'rgba(82, 218, 255, 0)');
+        g.fillStyle = bounce;
+        g.fillRect(mid - 38, 5, 76, 27);
+      }
+      g.restore();
+    }
+
+    // Inner top champagne-white bevel highlight along the V-brow crest
+    g.save();
+    g.clip();
+    g.strokeStyle = 'rgba(255, 253, 240, .78)';
+    g.lineWidth = 0.9;
+    g.beginPath();
+    g.moveTo(mid - 33.6, 5.8); g.lineTo(mid - 9.5, 5.2); g.lineTo(mid, 11.2);
+    g.lineTo(mid + 9.5, 5.2); g.lineTo(mid + 33.6, 5.8);
+    g.stroke();
+    g.restore();
+
+    // Precision automotive dark-titanium parting seam around the sculpted gold visor plate
+    visorBand();
+    g.strokeStyle = 'rgba(22, 8, 10, .76)';
+    g.lineWidth = 1.05;
+    g.stroke();
+    g.restore();
+
+    // 3. Brushed silver-titanium precision micro-hinges locking the gold visor to the crimson temples
+    for (const s of [-1, 1]) {
+      const hx = mid + s * 37.2, hy = 16.8;
+      const hg = g.createLinearGradient(hx - 2.2, hy - 3.6, hx + 2.2, hy + 3.6);
+      hg.addColorStop(0, '#F7FAFE');
+      hg.addColorStop(0.5, '#B2BDCC');
+      hg.addColorStop(1, '#5D6878');
+      g.fillStyle = hg;
+      g.beginPath();
+      g.moveTo(hx - s * 1.2, hy - 3.6);
+      g.lineTo(hx + s * 2.1, hy - 2.4);
+      g.lineTo(hx + s * 2.1, hy + 2.4);
+      g.lineTo(hx - s * 1.2, hy + 3.6);
+      g.closePath();
+      g.fill();
+      g.strokeStyle = 'rgba(20, 10, 12, .62)';
+      g.lineWidth = 0.62;
+      g.stroke();
+
+      // Fine machined crimson temple parting seam
+      g.strokeStyle = 'rgba(255, 222, 160, .36)';
+      g.lineWidth = 0.6;
+      g.beginPath();
+      g.moveTo(hx + s * 2.4, hy);
+      g.lineTo(s < 0 ? x0 + 2 : x1 - 2, hy - 1.4);
+      g.stroke();
+    }
+
+    // Top studio rim catch-light
+    const topRim = g.createLinearGradient(x0 + 8, 0, x1 - 8, 0);
+    topRim.addColorStop(0, 'rgba(255,214,196,0)');
+    topRim.addColorStop(0.28, 'rgba(255,228,208,.55)');
+    topRim.addColorStop(0.5, 'rgba(255,250,232,.78)');
+    topRim.addColorStop(0.72, 'rgba(255,228,208,.55)');
+    topRim.addColorStop(1, 'rgba(255,214,196,0)');
+    g.fillStyle = topRim;
+    g.fillRect(x0 + 8, 0.8, W - 16, 1.0);
+    g.restore();
+  }
+
+  // ---- B. EXPANDED MODE: 3D Interlocking Candy-Apple Crimson + Brushed 18K Gold Armored Glass Deck
+  if (imExp > 0.008) {
+    g.save();
+    g.globalAlpha = A * imExp;
+    const boost = cur === 'media' && st.media.playing ? bass * 0.24 : 0;
+
+    // 1. Rich diagonal crimson-left + warm dark bronze-ruby center + burnished champagne-gold-right base
+    const base = g.createLinearGradient(x0, 0, x1, H * 0.9);
+    base.addColorStop(0, '#CF1B22');
+    base.addColorStop(0.18, '#A51218');
+    base.addColorStop(0.36, '#5A1319');
+    base.addColorStop(0.54, '#36171C');
+    base.addColorStop(0.72, '#6A4418');
+    base.addColorStop(0.88, '#B88228');
+    base.addColorStop(1, '#DDA847');
+    g.fillStyle = base;
+    g.fillRect(x0, 0, W, H);
+
+    // 2. Vertical 3D cylindrical studio curvature (bright top shoulder, deep contoured underside)
+    const cyl = g.createLinearGradient(0, 0, 0, H);
+    cyl.addColorStop(0, 'rgba(255, 240, 214, .22)');
+    cyl.addColorStop(0.26, 'rgba(255, 216, 170, .06)');
+    cyl.addColorStop(0.68, 'rgba(18, 8, 12, .16)');
+    cyl.addColorStop(1, 'rgba(12, 5, 8, .44)');
+    g.fillStyle = cyl;
+    g.fillRect(x0, 0, W, H);
+
+    // 3. Sculpted angled 3D crimson & brushed-gold shoulder plates on left & right wings (when wide enough)
+    if (W > 150) {
+      const wing = clamp(W * 0.15, 24, 58), slant = 12;
+
+      // Left sculpted candy-apple crimson plate
+      g.save();
+      g.beginPath();
+      g.moveTo(x0, 0); g.lineTo(x0 + wing + slant, 0);
+      g.lineTo(x0 + wing - 2, H); g.lineTo(x0, H);
+      g.closePath();
+      const lg = g.createLinearGradient(x0, 0, x0 + wing + slant, H);
+      lg.addColorStop(0, 'rgba(245, 72, 62, .46)');
+      lg.addColorStop(0.55, 'rgba(198, 22, 28, .34)');
+      lg.addColorStop(1, 'rgba(116, 10, 16, .24)');
+      g.fillStyle = lg; g.fill();
+      g.restore();
+
+      // Right sculpted brushed 18K champagne-gold plate
+      g.save();
+      g.beginPath();
+      g.moveTo(x1 - wing + 2, 0); g.lineTo(x1, 0);
+      g.lineTo(x1, H); g.lineTo(x1 - wing - slant, H);
+      g.closePath();
+      const rg = g.createLinearGradient(x1 - wing - slant, 0, x1, H);
+      rg.addColorStop(0, 'rgba(182, 126, 36, .26)');
+      rg.addColorStop(0.55, 'rgba(236, 192, 98, .38)');
+      rg.addColorStop(1, 'rgba(255, 238, 186, .42)');
+      g.fillStyle = rg; g.fill();
+      g.restore();
+
+      // Machined gold & silver-titanium diagonal armor seams separating outer plates from smoked center glass
+      const drawSeam = (ax, ay, bx, by, hi) => {
+        g.strokeStyle = 'rgba(16, 7, 10, .52)';
+        g.lineWidth = 1.25;
+        g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+        g.strokeStyle = hi;
+        g.lineWidth = 0.72;
+        g.beginPath(); g.moveTo(ax + 0.9, ay); g.lineTo(bx + 0.9, by); g.stroke();
+      };
+      drawSeam(x0 + wing + slant, 2, x0 + wing - 2, H - 2, 'rgba(250, 220, 148, .52)');
+      drawSeam(x1 - wing + 2, 2, x1 - wing - slant, H - 2, 'rgba(255, 244, 210, .56)');
+
+      // Tiny brushed silver-titanium rail pins on the seam ends
+      g.fillStyle = 'rgba(226, 234, 244, .68)';
+      g.fillRect(x0 + wing + slant - 1.5, 2.2, 3, 1.3);
+      g.fillRect(x1 - wing - slant - 1.5, H - 3.5, 3, 1.3);
+    }
+
+    // 4. Anisotropic brushed metal & micro-hex Stark weave across the deck
+    if (imBrushPat) { g.fillStyle = imBrushPat; g.fillRect(x0, 0, W, H); }
+    if (imHexPat) { g.fillStyle = imHexPat; g.fillRect(x0, 0, W, H); }
+
+    // 5. Breathing living laboratory reflection + cursor-tracking studio specular sweep
+    const sheenX = mid + specShift + Math.sin(sec * 0.55) * (W * 0.12);
+    const sheen = g.createRadialGradient(sheenX, 3 + imMy * 4, 2, sheenX, 12, Math.max(58, W * 0.42));
+    sheen.addColorStop(0, `rgba(255, 250, 234, ${(0.24 + imMa * 0.1 + boost * 0.3).toFixed(3)})`);
+    sheen.addColorStop(0.5, 'rgba(248, 214, 142, .08)');
+    sheen.addColorStop(1, 'rgba(248, 214, 142, 0)');
+    g.fillStyle = sheen;
+    g.fillRect(x0, 0, W, H);
+
+    // 6. Crisp top brushed-gold/crimson crown bevel & whisper-clean holographic cyan bottom energy hairline
+    const crown = g.createLinearGradient(x0 + 8, 0, x1 - 8, 0);
+    crown.addColorStop(0, 'rgba(255, 198, 178, .48)');
+    crown.addColorStop(0.28, 'rgba(250, 222, 152, .74)');
+    crown.addColorStop(0.5, 'rgba(255, 250, 232, .86)');
+    crown.addColorStop(0.75, 'rgba(248, 214, 136, .76)');
+    crown.addColorStop(1, 'rgba(255, 240, 196, .52)');
+    g.fillStyle = crown;
+    g.fillRect(x0 + 9, 0.75, Math.max(0, W - 18), 1.05);
+
+    // Secondary holographic cyan scan filament gliding gently along bottom inner rail
+    const span = Math.max(24, W - 36);
+    const scanPhase = reducedMotion ? 0.5 : (sec * 0.24) % 1;
+    const sx = x0 + 18 + span * scanPhase;
+    const scanGrad = g.createLinearGradient(sx - 34, 0, sx + 34, 0);
+    scanGrad.addColorStop(0, 'rgba(92, 225, 255, 0)');
+    scanGrad.addColorStop(0.45, `rgba(110, 232, 255, ${(0.42 + boost * 0.5).toFixed(3)})`);
+    scanGrad.addColorStop(0.52, `rgba(245, 253, 255, ${(0.72 + boost * 0.25).toFixed(3)})`);
+    scanGrad.addColorStop(1, 'rgba(92, 225, 255, 0)');
+    g.fillStyle = scanGrad;
+    g.fillRect(x0 + 12, H - 1.9, Math.max(0, W - 24), 1.05);
+
+    // Audio-reactive Arc impulse wash during active media playback
+    if (boost > 0.02) {
+      const ag = g.createRadialGradient(mid, H, 2, mid, H, W * 0.45);
+      ag.addColorStop(0, `rgba(118, 236, 255, ${(boost * 0.55).toFixed(3)})`);
+      ag.addColorStop(0.55, `rgba(244, 206, 118, ${(boost * 0.28).toFixed(3)})`);
+      ag.addColorStop(1, 'rgba(118, 236, 255, 0)');
+      g.fillStyle = ag;
+      g.fillRect(x0, 0, W, H);
+    }
+    g.restore();
+  }
+
+  g.restore();
+};
+
+// Helper: 3D beveled candy-apple crimson or satin 18K champagne-gold Stark armor segment
+function paint3DArmorChevron(g, x, y, w, h, rot, isGold, side, alpha, seamGlow) {
+  if (alpha < 0.015) return;
+  const hw = w * 0.5, hh = h * 0.5, s = side || 1;
+  const path = () => {
+    g.beginPath();
+    g.moveTo(-hw, -hh * 0.72);
+    g.lineTo(hw * 0.42, -hh);
+    g.lineTo(hw, -hh * 0.12);
+    g.lineTo(hw * 0.56, hh);
+    g.lineTo(-hw * 0.78, hh * 0.82);
+    g.lineTo(-hw, hh * 0.1);
+    g.closePath();
+  };
+
+  g.save();
+  g.globalAlpha = alpha;
+  g.translate(x, y);
+  g.rotate(rot);
+  if (s < 0) g.scale(-1, 1);
+
+  // 1. Directional ambient drop shadow
+  g.save();
+  g.translate(0, 1.9);
+  path();
+  g.fillStyle = 'rgba(14, 6, 10, .36)';
+  g.fill();
+  g.restore();
+
+  // 2. 3D extruded metallic underside wall (true physical plate thickness)
+  g.save();
+  g.translate(0.4, 1.25);
+  path();
+  g.fillStyle = isGold ? '#68430E' : '#58080C';
+  g.fill();
+  g.restore();
+
+  // 3. Sculpted top metallic face (automotive candy-apple red or 18K champagne gold)
+  path();
+  const fg = g.createLinearGradient(-hw, -hh, hw, hh);
+  if (isGold) {
+    fg.addColorStop(0, '#FFF5CF');
+    fg.addColorStop(0.38, '#EBC468');
+    fg.addColorStop(0.78, '#C8902E');
+    fg.addColorStop(1, '#986618');
+  } else {
+    fg.addColorStop(0, '#F54B42');
+    fg.addColorStop(0.36, '#CE1B22');
+    fg.addColorStop(0.78, '#981016');
+    fg.addColorStop(1, '#6C090E');
+  }
+  g.fillStyle = fg;
+  g.fill();
+
+  // 4. Precision bevel rim (champagne-gold rim on red plates, crisp white-gold rim on gold plates)
+  g.strokeStyle = isGold ? 'rgba(255, 250, 232, .85)' : 'rgba(248, 218, 146, .78)';
+  g.lineWidth = 0.68;
+  g.stroke();
+
+  // 5. Central machined armor crease for 3D faceted catch-light
+  g.strokeStyle = isGold ? 'rgba(255, 255, 245, .58)' : 'rgba(255, 198, 184, .48)';
+  g.lineWidth = 0.55;
+  g.beginPath();
+  g.moveTo(-hw * 0.65, -hh * 0.08);
+  g.lineTo(hw * 0.52, -hh * 0.16);
+  g.stroke();
+
+  // 6. Optional cyan nanotech docking seam glow along inner edge
+  if (seamGlow > 0.03) {
+    g.strokeStyle = `rgba(130, 238, 255, ${(seamGlow * 0.88).toFixed(3)})`;
+    g.lineWidth = 0.9;
+    g.beginPath();
+    g.moveTo(-hw, -hh * 0.68);
+    g.lineTo(-hw * 0.78, hh * 0.78);
+    g.stroke();
+  }
+  g.restore();
+}
+
+// Helper: Sculpted 3D crimson, brushed-gold & silver-titanium dorsal/corner clamp bracket
+function paint3DClampShoulder(g, x, y, side, scale, alpha, energyA) {
+  if (alpha < 0.015) return;
+  g.save();
+  g.globalAlpha = alpha;
+  g.translate(x, y);
+  g.scale(side * scale, scale);
+
+  // Drop shadow
+  g.fillStyle = 'rgba(14, 6, 10, .36)';
+  g.beginPath();
+  g.moveTo(0, -11); g.lineTo(8.5, -8.2); g.lineTo(10.8, 0); g.lineTo(8.5, 8.2); g.lineTo(0, 11);
+  g.lineTo(2.4, 6.2); g.lineTo(3.6, 0); g.lineTo(2.4, -6.2); g.closePath();
+  g.save(); g.translate(0.6, 1.8); g.fill(); g.restore();
+
+  // Outer 3D candy-apple crimson shoulder guard (upper segment)
+  const rg = g.createLinearGradient(0, -12, 10, 2);
+  rg.addColorStop(0, '#F54C43');
+  rg.addColorStop(0.5, '#C81820');
+  rg.addColorStop(1, '#7D0B11');
+  g.fillStyle = rg;
+  g.beginPath();
+  g.moveTo(-0.5, -11.4); g.lineTo(8.2, -8.4); g.lineTo(10.4, -0.9);
+  g.lineTo(3.5, -0.9); g.lineTo(2.2, -6.8); g.closePath();
+  g.fill();
+  g.strokeStyle = 'rgba(250, 222, 152, .8)';
+  g.lineWidth = 0.72;
+  g.stroke();
+
+  // Lower interlocking 3D brushed 18K champagne-gold guard segment
+  const gg = g.createLinearGradient(0, 0, 10, 12);
+  gg.addColorStop(0, '#FFF3CA');
+  gg.addColorStop(0.48, '#E8BE62');
+  gg.addColorStop(1, '#A6721E');
+  g.fillStyle = gg;
+  g.beginPath();
+  g.moveTo(3.5, 0.9); g.lineTo(10.4, 0.9); g.lineTo(8.2, 8.4);
+  g.lineTo(-0.5, 11.4); g.lineTo(2.2, 6.8); g.closePath();
+  g.fill();
+  g.strokeStyle = 'rgba(255, 250, 232, .84)';
+  g.lineWidth = 0.7;
+  g.stroke();
+
+  // Brushed silver-titanium central micro-hinge joint linking the red & gold armor plates
+  const sg = g.createLinearGradient(2, -2, 11, 2);
+  sg.addColorStop(0, '#F6F9FD');
+  sg.addColorStop(0.55, '#B4BFCE');
+  sg.addColorStop(1, '#687384');
+  g.fillStyle = sg;
+  g.beginPath();
+  g.roundRect(2.6, -1.55, 7.6, 3.1, 1.1);
+  g.fill();
+  g.strokeStyle = 'rgba(22, 12, 14, .52)';
+  g.lineWidth = 0.55;
+  g.stroke();
+
+  // Subtle holographic cyan energy seam dot inside the hinge
+  const ea = clamp(0.45 + energyA * 0.5, 0, 1);
+  g.fillStyle = `rgba(228, 252, 255, ${ea.toFixed(3)})`;
+  g.beginPath(); g.arc(6.4, 0, 0.95, 0, Math.PI * 2); g.fill();
+  g.restore();
+}
+
+// Helper: Volumetric 3-plane floating holographic Arc Reactor (slow coil rotation, soft pulse, 3D mouse parallax)
+function paint3DHoloArcReactor(g, cx, cy, r, sec, alpha, pulse, openK) {
+  if (alpha < 0.015 || openK < 0.02) return;
+  const k = imClamp01(openK);
+  const px = imMx * r * 0.14, py = imMy * r * 0.11;
+  const breathe = 0.88 + 0.12 * Math.sin(sec * 2.1) + pulse * 0.18;
+
+  g.save();
+  g.globalAlpha = alpha * imSmooth(0, 0.35, k);
+
+  // 1. Volumetric cyan-white floating hologram aura (soft atmospheric depth, never harsh neon)
+  const halo = g.createRadialGradient(cx + px, cy + py, r * 0.08, cx, cy, r * 1.62);
+  halo.addColorStop(0, `rgba(240, 253, 255, ${(0.52 * breathe).toFixed(3)})`);
+  halo.addColorStop(0.28, `rgba(98, 228, 255, ${(0.34 * breathe).toFixed(3)})`);
+  halo.addColorStop(0.62, `rgba(60, 194, 244, ${(0.14 * breathe).toFixed(3)})`);
+  halo.addColorStop(1, 'rgba(60, 194, 244, 0)');
+  g.fillStyle = halo;
+  g.beginPath(); g.arc(cx, cy, r * 1.62, 0, Math.PI * 2); g.fill();
+
+  // Subtle warm dark glass lens backer so the pale cyan/white coils stay crystal-clear over bright lab backdrops
+  const lens = g.createRadialGradient(cx, cy, r * 0.12, cx, cy, r * 1.06);
+  lens.addColorStop(0, 'rgba(14, 34, 52, .38)');
+  lens.addColorStop(0.75, 'rgba(12, 26, 42, .44)');
+  lens.addColorStop(1, 'rgba(12, 26, 42, 0)');
+  g.fillStyle = lens;
+  g.beginPath(); g.arc(cx, cy, r * 1.08, 0, Math.PI * 2); g.fill();
+
+  // ---- REAR PLANE (0.55x parallax): Calibrated holographic containment ring + 3 brushed-gold brackets
+  g.save();
+  g.translate(cx + px * 0.55, cy + py * 0.55);
+  g.strokeStyle = 'rgba(116, 232, 255, .72)';
+  g.lineWidth = 0.9;
+  g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2 * imSmooth(0.02, 0.55, k)); g.stroke();
+
+  // Fine radial calibration ticks around outer perimeter
+  g.strokeStyle = 'rgba(210, 248, 255, .52)';
+  g.lineWidth = 0.55;
+  g.beginPath();
+  for (let i = 0; i < 36; i++) {
+    const a = (i / 36) * Math.PI * 2 - sec * 0.1;
+    const r0 = i % 4 === 0 ? r * 0.9 : r * 0.94, r1 = r * 1.03;
+    g.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
+    g.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
+  }
+  g.stroke();
+
+  // 3 precision champagne-gold anchor brackets harmonizing the hologram with the red/gold armor
+  g.strokeStyle = 'rgba(248, 216, 138, .88)';
+  g.lineWidth = 1.25;
+  for (let i = 0; i < 3; i++) {
+    const a = -Math.PI * 0.5 + i * (Math.PI * 2 / 3) + sec * 0.08;
+    g.beginPath(); g.arc(0, 0, r * 1.09, a - 0.24, a + 0.24); g.stroke();
+  }
+  g.restore();
+
+  // ---- MIDDLE PLANE (1.0x parallax): 10 iconic Mark-series palladium coil segments, slow serene rotation
+  g.save();
+  g.translate(cx + px, cy + py);
+  g.rotate(sec * 0.24);
+  const coilCount = 10, step = (Math.PI * 2) / coilCount;
+  const rOut = r * 0.84, rIn = r * 0.57;
+  for (let i = 0; i < coilCount; i++) {
+    const ck = imSmooth(0.12 + i * 0.055, 0.34 + i * 0.055, k);
+    if (ck < 0.02) continue;
+    const a0 = i * step + 0.085, a1 = (i + 1) * step - 0.085;
+    const wave = 0.82 + 0.18 * Math.sin(sec * 2.6 - i * 0.63);
+    g.beginPath();
+    g.arc(0, 0, rOut, a0, a1);
+    g.arc(0, 0, rIn, a1, a0, true);
+    g.closePath();
+    g.fillStyle = `rgba(110, 234, 255, ${(0.56 * ck * wave).toFixed(3)})`;
+    g.fill();
+    g.strokeStyle = `rgba(242, 253, 255, ${(0.9 * ck * wave).toFixed(3)})`;
+    g.lineWidth = 0.72;
+    g.stroke();
+  }
+  g.restore();
+
+  // ---- FRONT PLANE (1.45x parallax): Counter-rotating vernier + Mark VI equilateral triangle + crystalline heart
+  const coreK = imSmooth(0.38, 0.92, k);
+  if (coreK > 0.02) {
+    g.save();
+    g.translate(cx + px * 1.45, cy + py * 1.45);
+    g.globalAlpha = alpha * coreK;
+
+    // Counter-rotating inner dashed vernier ring
+    g.save();
+    g.rotate(-sec * 0.36);
+    g.strokeStyle = 'rgba(220, 250, 255, .78)';
+    g.lineWidth = 0.75;
+    g.setLineDash([2.1, 1.9]);
+    g.beginPath(); g.arc(0, 0, r * 0.46, 0, Math.PI * 2); g.stroke();
+    g.setLineDash([]);
+    g.restore();
+
+    // Glowing inverted Mark VI core triangle (pointing down like Tony's New Element reactor)
+    const tr = r * 0.36;
+    g.beginPath();
+    for (let i = 0; i < 3; i++) {
+      const a = Math.PI * 0.5 + i * (Math.PI * 2 / 3) + Math.sin(sec * 0.5) * 0.04;
+      const vx = Math.cos(a) * tr, vy = Math.sin(a) * tr;
+      if (i) g.lineTo(vx, vy); else g.moveTo(vx, vy);
+    }
+    g.closePath();
+    const cg = g.createRadialGradient(0, 0, 0, 0, 0, tr);
+    cg.addColorStop(0, '#FFFFFF');
+    cg.addColorStop(0.55, `rgba(215, 250, 255, ${(0.92 * breathe).toFixed(3)})`);
+    cg.addColorStop(1, 'rgba(84, 222, 255, .62)');
+    g.fillStyle = cg;
+    g.fill();
+    g.strokeStyle = '#FFFFFF';
+    g.lineWidth = 0.95;
+    g.stroke();
+    g.restore();
+  }
+
+  g.restore();
+}
+
+// Helper: Structured holographic scan wing arc (crisp on both bright Stark lab & dark backdrops — zero fake text)
+function paintHoloScanWing(g, cx, cy, rBase, side, sec, alpha, energy) {
+  if (alpha < 0.015) return;
+  const s = side;
+  const tiltY = imMy * 1.8, tiltX = imMx * 2.2;
+  const aCenter = s > 0 ? 0 : Math.PI;
+  const span = 0.58;
+
+  g.save();
+  g.globalAlpha = alpha;
+  g.translate(cx + tiltX * 0.6, cy + tiltY * 0.6);
+
+  // Primary calibrated Stark cyan guide arc
+  g.strokeStyle = 'rgba(34, 192, 242, .74)';
+  g.lineWidth = 1.0;
+  g.beginPath(); g.arc(0, 0, rBase, aCenter - span, aCenter + span); g.stroke();
+
+  // Outer dashed precision range arc
+  g.strokeStyle = 'rgba(52, 204, 248, .55)';
+  g.lineWidth = 0.72;
+  g.setLineDash([2.8, 2.5]);
+  g.beginPath(); g.arc(0, 0, rBase + 6.5, aCenter - span * 0.82, aCenter + span * 0.82); g.stroke();
+  g.setLineDash([]);
+
+  // 5 structured micro-chart radial bars (pure geometric rhythm, zero fake labels)
+  for (let i = 0; i < 5; i++) {
+    const frac = (i - 2) / 2;
+    const ang = aCenter + frac * span * 0.68;
+    const amp = reducedMotion ? 0.55 : 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(sec * 2.1 + i * 1.15 + s * 0.7)) + energy * 0.35;
+    const len = 2.2 + clamp(amp, 0, 1.15) * 3.8;
+    const r0 = rBase + 1.4, r1 = r0 + len;
+    g.strokeStyle = i === 2 ? 'rgba(218, 172, 72, .85)' : 'rgba(42, 198, 246, .76)';
+    g.lineWidth = 1.2;
+    g.beginPath();
+    g.moveTo(Math.cos(ang) * r0, Math.sin(ang) * r0);
+    g.lineTo(Math.cos(ang) * r1, Math.sin(ang) * r1);
+    g.stroke();
+  }
+
+  // Smooth gliding holographic scanner pinpoint along the primary arc
+  const sweep = reducedMotion ? 0 : Math.sin(sec * 1.35 + (s > 0 ? 0 : 1.4)) * (span * 0.88);
+  const sa = aCenter + sweep;
+  const sx = Math.cos(sa) * rBase, sy = Math.sin(sa) * rBase;
+  g.strokeStyle = 'rgba(130, 238, 255, .95)';
+  g.lineWidth = 1.65;
+  g.beginPath(); g.arc(0, 0, rBase, sa - 0.14, sa + 0.14); g.stroke();
+
+  g.fillStyle = '#FFFFFF';
+  g.strokeStyle = 'rgba(34, 192, 242, .85)';
+  g.lineWidth = 0.6;
+  g.beginPath(); g.arc(sx, sy, 1.45, 0, Math.PI * 2); g.fill(); g.stroke();
+
+  // Terminal anchor data nodes (champagne-gold & Stark cyan)
+  for (const dir of [-1, 1]) {
+    const ea = aCenter + dir * span;
+    const ex = Math.cos(ea) * rBase, ey = Math.sin(ea) * rBase;
+    g.fillStyle = dir < 0 ? '#E8BE62' : '#38C8F6';
+    g.beginPath(); g.arc(ex, ey, 1.3, 0, Math.PI * 2); g.fill();
+  }
+  g.restore();
+}
+
+// 7-stage bidirectional mechanical plate + coordinated nano-lattice transition for the top pill
+function drawIronPillTransition(g, now, cx, liveW, sec) {
+  const elapsed = now - imPillTr.at;
+  if (elapsed < 0 || elapsed >= imPillTr.dur) return 1;
+  const u = imClamp01(elapsed / imPillTr.dur);
+  const opening = imPillTr.dir === 'open';
+  // k runs 0 -> 1 on open, 1 -> 0 on close (exact coordinated reverse choreography)
+  const k = opening ? u : 1 - u;
+  const minW = Math.min(imPillTr.fromW, imPillTr.toW);
+  const maxW = Math.max(imPillTr.fromW, imPillTr.toW, liveW);
+  const hMin = minW * 0.5, hMax = maxW * 0.5;
+  const cy = 26, top = 8, bot = 44;
+  const fade = imSmooth(0, 0.08, k) * (1 - imSmooth(0.84, 1, k));
+
+  // Stage 1: Telescoping brushed silver-titanium twin guide rails with hydraulic collar pins
+  const railK = imEaseOut(imClamp01(k / 0.58));
+  const railH = hMin + (hMax + 11 - hMin) * railK;
+  if (fade > 0.01) {
+    g.save();
+    g.globalAlpha = fade * 0.92;
+    for (const ry of [top - 1.2, bot + 1.2]) {
+      const rg = g.createLinearGradient(cx - railH, 0, cx + railH, 0);
+      rg.addColorStop(0, 'rgba(244, 248, 253, .92)');
+      rg.addColorStop(0.18, 'rgba(176, 188, 204, .82)');
+      rg.addColorStop(0.5, 'rgba(248, 220, 152, .45)');
+      rg.addColorStop(0.82, 'rgba(176, 188, 204, .82)');
+      rg.addColorStop(1, 'rgba(244, 248, 253, .92)');
+      g.strokeStyle = rg;
+      g.lineWidth = 1.45;
+      g.beginPath();
+      g.moveTo(cx - railH, ry); g.lineTo(cx - hMin * 0.65, ry);
+      g.moveTo(cx + hMin * 0.65, ry); g.lineTo(cx + railH, ry);
+      g.stroke();
+
+      // Silver rail collar stops
+      g.fillStyle = '#EEF3FA';
+      g.fillRect(cx - railH - 1.5, ry - 1.6, 3.2, 3.2);
+      g.fillRect(cx + railH - 1.7, ry - 1.6, 3.2, 3.2);
+    }
+    g.restore();
+  }
+
+  // Stage 2: Heavy 3D candy-apple crimson & brushed-gold shoulder plates gliding & locking onto rail ends
+  const plateK = imMechSettle(imClamp01((k - 0.06) / 0.66));
+  const plateX = hMin + (hMax + 1 - hMin) * plateK;
+  if (fade > 0.01) {
+    for (const s of [-1, 1]) {
+      paint3DClampShoulder(g, cx + s * plateX, cy, s, 1.08, fade * 0.96, 1);
+    }
+  }
+
+  // Stage 3: Pivoting brushed champagne-gold dorsal & ventral lock bars unfolding along perimeter
+  const barK = imEaseInOut(imClamp01((k - 0.14) / 0.56));
+  if (fade > 0.01 && barK > 0.02) {
+    g.save();
+    g.globalAlpha = fade * barK * 0.88;
+    const span = 22 + (hMax - hMin) * 0.34 * barK;
+    g.strokeStyle = '#F5D686';
+    g.lineWidth = 1.8;
+    for (const s of [-1, 1]) {
+      const bx = cx + s * (plateX - 4);
+      g.beginPath();
+      g.moveTo(bx, top + 0.4); g.lineTo(bx - s * span, top + 0.4);
+      g.moveTo(bx, bot - 0.4); g.lineTo(bx - s * span * 0.82, bot - 0.4);
+      g.stroke();
+    }
+    g.restore();
+  }
+
+  // Stage 4: 16 coordinated 3D crimson & gold nanotech chevrons flowing along harmonic streamlines & docking
+  for (const sp of IM_NANO_SPECS) {
+    const nk = imClamp01((k - 0.12 - sp.delay) / 0.58);
+    if (nk <= 0.01 || nk >= 0.995) continue;
+    const e = imEaseInOut(nk);
+    const arcLift = Math.sin(nk * Math.PI);
+    const startX = cx + sp.side * (hMin * 0.72);
+    const endX = cx + sp.side * (hMin + (hMax + 12 - hMin) * sp.tFrac);
+    const px = startX + (endX - startX) * e;
+    const py = cy + sp.row * 10 + sp.arc * arcLift;
+    const rot = (1 - e) * sp.spin + arcLift * sp.side * 0.28;
+    const alpha = Math.sin(nk * Math.PI) * 0.96;
+
+    // Fine luminous cyan magnetic assembly tether linking each nano-chevron to its target slot
+    g.save();
+    g.globalAlpha = alpha * 0.52;
+    g.strokeStyle = '#7CE8FF';
+    g.lineWidth = 0.75;
+    g.beginPath();
+    g.moveTo(px, py);
+    g.lineTo(endX, sp.row <= 0 ? top + 2 : bot - 2);
+    g.stroke();
+    g.restore();
+
+    paint3DArmorChevron(g, px, py, sp.w, sp.h, rot, sp.gold, sp.side, alpha, arcLift);
+  }
+
+  // Stage 5: Luminous inter-plate energy veins & traveling pulse nodes racing outward (or inward on close)
+  const pulseK = imClamp01((k - 0.22) / 0.62);
+  if (pulseK > 0.01 && pulseK < 0.99) {
+    const px = hMin * 0.4 + (hMax + 4 - hMin * 0.4) * imEaseOut(pulseK);
+    const pa = Math.sin(pulseK * Math.PI) * 0.92;
+    g.save();
+    for (const s of [-1, 1]) {
+      for (const py of [top + 0.8, bot - 0.8]) {
+        const eg = g.createLinearGradient(cx + s * (px - 26), 0, cx + s * (px + 10), 0);
+        eg.addColorStop(0, 'rgba(92, 225, 255, 0)');
+        eg.addColorStop(0.65, `rgba(110, 234, 255, ${(pa * 0.85).toFixed(3)})`);
+        eg.addColorStop(1, `rgba(255, 255, 255, ${pa.toFixed(3)})`);
+        g.strokeStyle = eg;
+        g.lineWidth = 1.6;
+        g.beginPath();
+        g.moveTo(cx + s * Math.max(8, px - 26), py);
+        g.lineTo(cx + s * px, py);
+        g.stroke();
+
+        g.fillStyle = `rgba(255, 255, 255, ${pa.toFixed(3)})`;
+        g.beginPath(); g.arc(cx + s * px, py, 1.7, 0, Math.PI * 2); g.fill();
+      }
+    }
+    g.restore();
+  }
+
+  // Stage 6: Translucent cyan holographic calibration scan sweeping smoothly across the expanding deck
+  const scanK = imClamp01((k - 0.34) / 0.56);
+  if (scanK > 0.02 && scanK < 0.98) {
+    const sa = Math.sin(scanK * Math.PI) * 0.55;
+    const sx = cx + (scanK * 2 - 1) * (hMax - 12);
+    g.save();
+    const sg = g.createLinearGradient(sx - 24, 0, sx + 24, 0);
+    sg.addColorStop(0, 'rgba(92, 225, 255, 0)');
+    sg.addColorStop(0.5, `rgba(130, 238, 255, ${(sa * 0.55).toFixed(3)})`);
+    sg.addColorStop(0.54, `rgba(255, 255, 255, ${(sa * 0.85).toFixed(3)})`);
+    sg.addColorStop(1, 'rgba(92, 225, 255, 0)');
+    g.fillStyle = sg;
+    g.fillRect(sx - 24, top + 2, 48, bot - top - 4);
+    g.restore();
+  }
+
+  // Stage 7: Precision 4-corner champagne-gold & white mechanical lock flash on final open settle
+  if (k > 0.72 && k < 0.98) {
+    const la = Math.sin(((k - 0.72) / 0.26) * Math.PI) * 0.85;
+    g.save();
+    g.strokeStyle = `rgba(255, 244, 206, ${la.toFixed(3)})`;
+    g.lineWidth = 1.45;
+    for (const s of [-1, 1]) {
+      const lx = cx + s * (liveW * 0.5 + 1.5);
+      g.beginPath();
+      g.moveTo(lx - s * 8, top - 0.5); g.lineTo(lx, top - 0.5); g.lineTo(lx, top + 7);
+      g.moveTo(lx - s * 8, bot + 0.5); g.lineTo(lx, bot + 0.5); g.lineTo(lx, bot - 7);
+      g.stroke();
+    }
+    g.restore();
+  }
+
+  return imSmooth(0.28, 0.95, k);
+}
+
+// 7-stage bidirectional mechanical armor frame + nano-lattice transition for #stack drawer
+function drawIronStackTransition(g, now, cx) {
+  const elapsed = now - imStackTr.at;
+  if (elapsed < 0 || elapsed >= imStackTr.dur) return;
+  const u = imClamp01(elapsed / imStackTr.dur);
+  const opening = imStackTr.dir === 'open';
+  const k = opening ? u : 1 - u;
+
+  const r = opening && st.stackOpen ? stackEl.getBoundingClientRect() : null;
+  const top = r && r.height > 28 ? r.top : imStackTr.top;
+  const w = r && r.width > 120 ? r.width : imStackTr.w;
+  const fullH = clamp(r && r.height > 28 ? r.height : imStackTr.h, 84, FX_IM_H - top - 8);
+  const halfW = w * 0.5;
+  const fade = imSmooth(0, 0.08, k) * (1 - imSmooth(0.84, 1, k));
+  if (fade < 0.01) return;
+
+  // Stage 1 & 2: Telescoping silver-titanium side rails + heavy 3D crimson & gold armored corner clasps descending
+  const railK = imMechSettle(imClamp01(k / 0.64));
+  const curBot = Math.min(FX_IM_H - 6, top + 26 + (fullH - 26) * railK);
+  const curHalf = halfW * (0.86 + 0.14 * imEaseOut(imClamp01(k / 0.45)));
+
+  g.save();
+  g.globalAlpha = fade * 0.92;
+
+  // Dorsal twin titanium-gold hydraulic struts descending from #island (y=44) to #stack crown (y=top)
+  for (const s of [-1, 1]) {
+    const xTop = cx + s * 58, xBot = cx + s * 88;
+    const sg = g.createLinearGradient(xTop, 44, xBot, top);
+    sg.addColorStop(0, '#E8BE62');
+    sg.addColorStop(0.5, '#EEF3FA');
+    sg.addColorStop(1, '#D82228');
+    g.strokeStyle = sg;
+    g.lineWidth = 2.1;
+    g.beginPath();
+    g.moveTo(xTop, 44);
+    g.lineTo(xTop + (xBot - xTop) * imClamp01(k / 0.35), 44 + (top - 44) * imClamp01(k / 0.35));
+    g.stroke();
+  }
+
+  // Lateral brushed silver-titanium guide rails flanking #stack
+  for (const s of [-1, 1]) {
+    const rx = cx + s * (curHalf + 3);
+    const lg = g.createLinearGradient(0, top, 0, curBot);
+    lg.addColorStop(0, '#F5D686');
+    lg.addColorStop(0.35, '#E4ECF6');
+    lg.addColorStop(0.75, '#D9262C');
+    lg.addColorStop(1, '#F5D686');
+    g.strokeStyle = lg;
+    g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(rx, top + 4); g.lineTo(rx, curBot - 4); g.stroke();
+
+    // 3D crimson & gold lower rail carriage shoes
+    paint3DArmorChevron(g, rx + s * 4, curBot - 8, 10.5, 5, s * Math.PI * 0.48, s > 0, s, fade * 0.95, 0.8);
+  }
+
+  // Stage 4: Coordinated 3D red & gold nanotech chevrons assembling along left & right stack perimeter
+  for (let i = 0; i < 12; i++) {
+    const s = i < 6 ? -1 : 1, idx = i % 6;
+    const nk = imClamp01((k - 0.1 - idx * 0.055) / 0.56);
+    if (nk <= 0.01 || nk >= 0.99) continue;
+    const e = imEaseInOut(nk), lift = Math.sin(nk * Math.PI);
+    const ty = top + 20 + ((fullH - 40) * (idx / 5));
+    const tx = cx + s * (halfW + 4);
+    const sx = cx + s * (halfW * 0.55), sy = 56;
+    const px = sx + (tx - sx) * e + s * lift * 18;
+    const py = sy + (ty - sy) * e;
+    const rot = (1 - e) * s * 0.9 + s * 0.22;
+    const a = lift * 0.95;
+
+    g.save();
+    g.globalAlpha = a * 0.45;
+    g.strokeStyle = '#7CE8FF';
+    g.lineWidth = 0.72;
+    g.beginPath(); g.moveTo(px, py); g.lineTo(tx, ty); g.stroke();
+    g.restore();
+
+    paint3DArmorChevron(g, px, py, 9.5, 4.4, rot, idx % 2 === 1, s, a, lift);
+  }
+
+  // Stage 5 & 6: Smooth horizontal cyan/white holographic scan beam + energy pulse sweeping through stack
+  const scanK = imClamp01((k - 0.24) / 0.62);
+  if (scanK > 0.02 && scanK < 0.98) {
+    const sy = top + 8 + (fullH - 16) * imEaseInOut(scanK);
+    const sa = Math.sin(scanK * Math.PI) * 0.78;
+    const bg = g.createLinearGradient(0, sy - 16, 0, sy + 10);
+    bg.addColorStop(0, 'rgba(92, 225, 255, 0)');
+    bg.addColorStop(0.7, `rgba(104, 230, 255, ${(sa * 0.26).toFixed(3)})`);
+    bg.addColorStop(0.92, `rgba(235, 253, 255, ${(sa * 0.78).toFixed(3)})`);
+    bg.addColorStop(1, 'rgba(92, 225, 255, 0)');
+    g.fillStyle = bg;
+    g.fillRect(cx - curHalf + 8, sy - 16, (curHalf - 8) * 2, 26);
+
+    // Dual white-cyan pulse nodes riding the side rails at the scan line
+    g.fillStyle = `rgba(255, 255, 255, ${sa.toFixed(3)})`;
+    g.beginPath();
+    g.arc(cx - curHalf - 3, sy, 2, 0, Math.PI * 2);
+    g.arc(cx + curHalf + 3, sy, 2, 0, Math.PI * 2);
+    g.fill();
+  }
+
+  // Stage 7: Final 4-corner champagne-gold armor clamp lock on open completion
+  if (k > 0.72) {
+    const la = Math.sin(((k - 0.72) / 0.28) * Math.PI) * 0.9;
+    g.strokeStyle = `rgba(255, 242, 198, ${la.toFixed(3)})`;
+    g.lineWidth = 1.6;
+    const L = cx - halfW - 1, R = cx + halfW + 1, T = top - 1, B = Math.min(FX_IM_H - 4, top + fullH + 1);
+    g.beginPath();
+    g.moveTo(L, T + 12); g.lineTo(L, T); g.lineTo(L + 14, T);
+    g.moveTo(R - 14, T); g.lineTo(R, T); g.lineTo(R, T + 12);
+    g.moveTo(L, B - 12); g.lineTo(L, B); g.lineTo(L + 14, B);
+    g.moveTo(R - 14, B); g.lineTo(R, B); g.lineTo(R, B - 12);
+    g.stroke();
+  }
+
+  g.restore();
+}
+
+// Precision mechanical details. These are decorative, not interactive controls or telemetry.
+function imMetal(g, x0, y0, x1, y1) {
+  const m = g.createLinearGradient(x0, y0, x1, y1);
+  m.addColorStop(0, '#303746'); m.addColorStop(.22, '#eff5fa');
+  m.addColorStop(.42, '#8e9ba8'); m.addColorStop(.62, '#f7fafc'); m.addColorStop(1, '#495463');
+  return m;
+}
+function imPiston(g, x0, y0, x1, y1, alpha) {
+  g.save(); g.globalAlpha *= alpha;
+  const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy);
+  g.translate(x0, y0); g.rotate(Math.atan2(dy, dx));
+  g.lineCap = 'round';
+  g.strokeStyle = '#1e252d'; g.lineWidth = 7; g.beginPath(); g.moveTo(0, 0); g.lineTo(len, 0); g.stroke();
+  g.strokeStyle = imMetal(g, 0, -3, 0, 3); g.lineWidth = 4.3; g.beginPath(); g.moveTo(1, 0); g.lineTo(len-1, 0); g.stroke();
+  g.fillStyle = '#6d0b12'; g.strokeStyle = '#ffd580'; g.lineWidth = .7;
+  g.beginPath(); g.roundRect(len * .13, -3.6, len * .34, 7.2, 1.5); g.fill(); g.stroke();
+  g.fillStyle = '#eff8fc'; g.fillRect(len * .47, -2.4, 2, 4.8);
+  for (const x of [0, len]) {
+    g.fillStyle = '#202d3a'; g.strokeStyle = '#f3d486'; g.lineWidth = 1;
+    g.beginPath(); g.arc(x, 0, 3.1, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.fillStyle = '#dceaf0'; g.beginPath(); g.arc(x, 0, 1.05, 0, Math.PI * 2); g.fill();
+  }
+  g.restore();
+}
+function imGauntlet(g, edge, cy, side, alpha, sec) {
+  // Compact articulated end-cap, not a robotic arm; the island's content remains unobscured.
+  g.save(); g.globalAlpha *= alpha; g.translate(edge, cy); g.scale(side, 1);
+  const red = g.createLinearGradient(0, -20, 0, 20);
+  red.addColorStop(0, '#ff6860'); red.addColorStop(.16, '#c71b22'); red.addColorStop(.55, '#750b11'); red.addColorStop(.82, '#bf2023'); red.addColorStop(1, '#39060a');
+  g.fillStyle = '#1c1e24'; g.strokeStyle = '#d4dce1'; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(0,-20); g.lineTo(10,-20); g.lineTo(19,-14); g.lineTo(23,-7); g.lineTo(23,7); g.lineTo(19,14); g.lineTo(10,20); g.lineTo(0,20); g.closePath(); g.fill(); g.stroke();
+  g.fillStyle = red; g.strokeStyle = '#edc15e'; g.lineWidth = 1.3;
+  g.beginPath(); g.moveTo(1,-18); g.lineTo(9,-18); g.lineTo(17,-12); g.lineTo(20,-6); g.lineTo(16,0); g.lineTo(20,6); g.lineTo(17,12); g.lineTo(9,18); g.lineTo(1,18); g.lineTo(5,10); g.lineTo(5,-10); g.closePath(); g.fill(); g.stroke();
+  // Stepped overlapping gold lock jaws, silver roller, vent slots.
+  g.fillStyle = '#deb752'; g.strokeStyle = '#fff0b9'; g.lineWidth = .6;
+  for (const v of [-1, 1]) {
+    g.beginPath(); g.moveTo(4, v*16); g.lineTo(10, v*16); g.lineTo(16, v*10); g.lineTo(11, v*8); g.lineTo(6, v*11); g.closePath(); g.fill(); g.stroke();
+    g.strokeStyle = '#36070b'; g.lineWidth = 1.2;
+    for (let i=0; i<3; i++) { g.beginPath(); g.moveTo(7+i*2.4,v*13); g.lineTo(9+i*2.4,v*10); g.stroke(); }
+  }
+  g.fillStyle = imMetal(g, 10, -5, 10, 5); g.strokeStyle = '#384452'; g.lineWidth = 1;
+  g.beginPath(); g.arc(12, 0, 5, 0, Math.PI*2); g.fill(); g.stroke();
+  g.fillStyle = '#26343d'; g.beginPath(); g.arc(12,0,2.4,0,Math.PI*2); g.fill();
+  g.strokeStyle = '#dcefff'; g.lineWidth = .75; g.beginPath(); g.moveTo(10.5,0); g.lineTo(13.5,0); g.stroke();
+  g.restore();
+}
+function imFraming(g, cx, halfW, cy, alpha, sec) {
+  // Two exposed, recessed tracks and short end cap pistons, outside the interactive surface.
+  g.save(); g.globalAlpha *= alpha;
+  for (const s of [-1,1]) {
+    const edge = cx + s*halfW;
+    imGauntlet(g, edge, cy, s, 1, sec);
+    imPiston(g, edge+s*4, 47, edge+s*26, 53, .96);
+    // Interlocking ventral track and gold sliding collar.
+    g.lineCap='round'; g.strokeStyle='#2c2022'; g.lineWidth=5;
+    g.beginPath(); g.moveTo(cx+s*38,46); g.lineTo(edge+s*3,46); g.stroke();
+    g.strokeStyle=imMetal(g,0,43,0,49); g.lineWidth=2.4; g.stroke();
+    g.fillStyle='#e2b85b'; g.strokeStyle='#71310f'; g.lineWidth=.7;
+    g.beginPath(); g.roundRect(cx+s*(halfW*.57)-3,43.5,6,5,1); g.fill(); g.stroke();
+    // Additional articulated nano facets: 4 per flank including the two main chevrons.
+    for (let j=0;j<2;j++) {
+      const drift = reducedMotion ? 0 : .5+.5*Math.sin(sec*.9+j*1.8+s);
+      const x = edge+s*(25+drift*3+j*4), y = cy+(j ? 13 : -13)+(j ? drift : -drift);
+      g.strokeStyle='rgba(86,220,255,.55)'; g.lineWidth=.7; g.beginPath(); g.moveTo(edge+s*18,cy+(j?10:-10)); g.lineTo(x,y); g.stroke();
+      paint3DArmorChevron(g,x,y,11,4.6,s*(j?.3:-.3),j===0,s,1,.4*drift);
+    }
+  }
+  g.restore();
+}
+function imHoloModules(g, cx, y, r, alpha, sec, stack) {
+  g.save(); g.globalAlpha *= alpha;
+  for (const s of [-1, 1]) {
+    const x = cx+s*(r+20), w=23;
+    g.save(); g.translate(x,y); g.scale(s,1);
+    // The patterns are ornamental waveforms, not readings or simulated metrics.
+    g.fillStyle='rgba(5,39,52,.42)'; g.strokeStyle='rgba(95,224,255,.72)'; g.lineWidth=.7;
+    g.beginPath(); g.moveTo(0,-7); g.lineTo(w-4,-7); g.lineTo(w,-3); g.lineTo(w,7); g.lineTo(0,7); g.closePath(); g.fill(); g.stroke();
+    g.strokeStyle='rgba(185,248,255,.9)'; g.lineWidth=.9; g.beginPath();
+    for(let i=0;i<=12;i++) {
+      const px=2+i*1.55, py=(s<0 ? Math.sin(i*.9-sec*1.3)*2.2 : (i%3-1)*1.6);
+      if(i===0) g.moveTo(px,py); else g.lineTo(px,py);
+    }
+    g.stroke(); g.fillStyle='#e2be71'; g.fillRect(2,4.8,5,.9);
+    g.restore();
+  }
+  g.restore();
+}
+function imStackHardware(g,cx,half,top,bottom,alpha,sec) {
+  g.save(); g.globalAlpha *= alpha;
+  for (const s of [-1,1]) {
+    const edge=cx+s*half;
+    // Suspended metal pistons in the 40px clear space either side of the reactor.
+    imPiston(g,cx+s*76,45,cx+s*92,top-2,1);
+    // Rails follow the panel bezel, away from text and buttons.
+    g.lineCap='round'; g.strokeStyle='#242d36'; g.lineWidth=6;
+    g.beginPath(); g.moveTo(edge,top+8); g.lineTo(edge,bottom-10); g.stroke();
+    g.strokeStyle=imMetal(g,edge-3,0,edge+3,0); g.lineWidth=3; g.stroke();
+    for (const y of [top+10,(top+bottom)/2,bottom-12]) {
+      g.fillStyle='#8a1015'; g.strokeStyle='#ebc064'; g.lineWidth=1;
+      g.beginPath(); g.roundRect(edge-4.5,y-5,9,10,2); g.fill(); g.stroke();
+      g.fillStyle='#e8edf2'; g.fillRect(edge-2,y-1,4,2);
+    }
+    // Extra two outer nano facets per side; oscillate slowly and reconnect to the frame.
+    for (let j=0;j<2;j++) {
+      const drift=reducedMotion?0:.5+.5*Math.sin(sec*.7+j*1.5+s);
+      const y=top+(bottom-top)*(j?.76:.24);
+      const x=edge+s*(15+drift*4);
+      g.strokeStyle='rgba(100,226,255,.62)'; g.lineWidth=.8;
+      g.beginPath(); g.moveTo(edge,y); g.lineTo(x,y); g.stroke();
+      paint3DArmorChevron(g,x,y,12,5,s*(j?.2:-.2),j===0,s,1,.5*drift);
+    }
+  }
+  g.restore();
+}
+
+// Persistent #fx orchestrator: 3D flank armor + floating nano-chevrons + holographic Arc Reactor + scan wings + transitions
+let imStackMorph = 0;
+function drawIronMan(t, dt, on, live) {
+  if (!on) {
+    if (imOn) {
+      fxG.clearRect(0, 0, FX_W, FX_IM_H);
+      imOn = false; sizeImFx(false); imEye = 0; imMa = 0;
+      document.body.style.setProperty('--im-eye', '0');
+    }
+    return;
+  }
+  if (!imOn) { imOn = true; sizeImFx(true); }
+  updateIronInput(t, dt || 0.016);
+
+  const g = fxG;
+  g.clearRect(0, 0, FX_W, FX_IM_H);
+
+  const cx = FX_W / 2, W = island.clientWidth || 98, halfW = W * 0.5;
+  imPrevW = W;
+  const now = performance.now();
+  const sec = reducedMotion ? 0 : t * 0.001;
+  const audioPulse = live && st.react ? clamp(bass * 0.7 + energy * 0.4, 0, 1) : 0;
+
+  // Smooth morph between standalone expanded pill (0) and open stack drawer (1)
+  imStackMorph += ((st.stackOpen ? 1 : 0) - imStackMorph) * Math.min(1, (dt || 0.016) * 8);
+
+  // 1. Run active bidirectional 7-stage open/close transitions
+  const openReady = drawIronPillTransition(g, now, cx, W, sec);
+  drawIronStackTransition(g, now, cx);
+
+  // Collapsed state shows ONLY the sculpted crimson/gold eye-bridge & proximity-powered mask eyes — clean perimeter
+  const ea = imSmooth(0.18, 0.92, imExp) * skyA;
+  if (ea < 0.015) return;
+
+  imFraming(g, cx, halfW, 26, ea * openReady, sec);
+
+  // 2. Persistent 3D crimson/gold/silver shoulder clamps + articulated floating nano-chevron wing plates + holo scan arcs
+  const cy = 26, settleA = ea * openReady;
+  if (settleA > 0.02) for (const s of [-1, 1]) {
+    // Sculpted 3D red & gold mechanical shoulder clamp hugging each end of the expanded pill
+    paint3DClampShoulder(g, cx + s * (halfW + 0.5), cy, s, 0.96, settleA * 0.96, audioPulse + imMa * 0.35);
+
+    // Articulated floating 3D crimson & champagne-gold nano armor pieces:
+    // Gently separate along a micro-vector, rotate subtly in 3D, pulse a delicate cyan tether, and reconnect
+    const cycleA = reducedMotion ? 0 : Math.pow(0.5 + 0.5 * Math.sin(sec * 0.95 + (s > 0 ? 0.4 : 2.1)), 2);
+    const cycleB = reducedMotion ? 0 : Math.pow(0.5 + 0.5 * Math.sin(sec * 0.82 + (s > 0 ? 2.6 : 0.9)), 2);
+    const cursorNudge = imMa * (s * imMx > 0 ? s * imMx * 1.6 : 0.4);
+
+    // Upper nano-chevron
+    const uxDock = cx + s * (halfW + 13.5), uyDock = cy - 7.4;
+    const ux = uxDock + s * (cycleA * 3.4 + cursorNudge), uy = uyDock - cycleA * 1.4 + imMy * 0.9;
+    const uRot = s * (-0.16 - cycleA * 0.14) + imMy * 0.04;
+
+    // Lower nano-chevron
+    const lxDock = cx + s * (halfW + 13.8), lyDock = cy + 7.6;
+    const lx = lxDock + s * (cycleB * 3.2 + cursorNudge * 0.85), ly = lyDock + cycleB * 1.3 + imMy * 0.9;
+    const lRot = s * (0.16 + cycleB * 0.13) + imMy * 0.04;
+
+    // Delicate cyan nanotech docking filament visible while piece separates from shoulder guard
+    if (cycleA > 0.18) {
+      g.save();
+      g.globalAlpha = settleA * (cycleA - 0.18) * 0.68;
+      g.strokeStyle = '#38C8F6';
+      g.lineWidth = 0.78;
+      g.beginPath(); g.moveTo(cx + s * (halfW + 8.5), cy - 5.2); g.lineTo(ux - s * 3.5, uy); g.stroke();
+      g.restore();
+    }
+    if (cycleB > 0.18) {
+      g.save();
+      g.globalAlpha = settleA * (cycleB - 0.18) * 0.68;
+      g.strokeStyle = '#38C8F6';
+      g.lineWidth = 0.78;
+      g.beginPath(); g.moveTo(cx + s * (halfW + 8.5), cy + 5.2); g.lineTo(lx - s * 3.5, ly); g.stroke();
+      g.restore();
+    }
+
+    paint3DArmorChevron(g, ux, uy, 9.6, 4.4, uRot, s > 0, s, settleA * 0.96, cycleA * 0.75);
+    paint3DArmorChevron(g, lx, ly, 9.2, 4.2, lRot, s < 0, s, settleA * 0.96, cycleB * 0.75);
+
+    // Structured curved holographic scan wing arc (stays cleanly outside the nano-chevrons and within FX_W)
+    if (halfW + 40 < FX_W * 0.5) {
+      paintHoloScanWing(g, cx + s * (halfW + 2), cy, 25.5, s, sec, settleA * 0.88, audioPulse);
+    }
+  }
+
+  // 3. Sculpted ventral crimson/gold/silver emitter bridge + floating 3D volumetric holographic Arc Reactor
+  // Smoothly shifts from prominent ventral showcase (y=67, r=15.8) when pill-only into the precision
+  // architectural bay (y=57, r=10.8) between #island (y=44) and #stack (y=70) so it NEVER overlaps content!
+  const arcY = 75.5 - imStackMorph * 11.5 + (reducedMotion ? 0 : Math.sin(sec * 1.45) * (0.8 - imStackMorph * 0.5));
+  const arcR = 20 - imStackMorph * 5;
+
+  // Sculpted 3D crimson & brushed-gold ventral emitter cradle tucked right beneath #island center (y=44)
+  g.save();
+  g.globalAlpha = ea * 0.96;
+  const cradleG = g.createLinearGradient(cx - 22, 43.5, cx + 22, 48);
+  cradleG.addColorStop(0, '#B8141B');
+  cradleG.addColorStop(0.28, '#F2CE74');
+  cradleG.addColorStop(0.5, '#F5F8FC');
+  cradleG.addColorStop(0.72, '#E8BE62');
+  cradleG.addColorStop(1, '#B8141B');
+  g.fillStyle = cradleG;
+  g.beginPath();
+  g.moveTo(cx - 22, 43.4); g.lineTo(cx + 22, 43.4);
+  g.lineTo(cx + 15.5, 47.4); g.lineTo(cx - 15.5, 47.4);
+  g.closePath();
+  g.fill();
+  g.strokeStyle = 'rgba(26, 10, 12, .55)';
+  g.lineWidth = 0.7;
+  g.stroke();
+
+  // Soft translucent cyan projection cone connecting the ventral emitter to the floating Arc Reactor
+  const coneG = g.createLinearGradient(0, 47, 0, arcY);
+  coneG.addColorStop(0, 'rgba(130, 238, 255, .36)');
+  coneG.addColorStop(1, 'rgba(92, 225, 255, 0)');
+  g.fillStyle = coneG;
+  g.beginPath();
+  g.moveTo(cx - 8, 47.2); g.lineTo(cx + 8, 47.2);
+  g.lineTo(cx + arcR * 0.92, arcY - 2); g.lineTo(cx - arcR * 0.92, arcY - 2);
+  g.closePath();
+  g.fill();
+  g.restore();
+
+  // Render the 3-plane floating holographic Arc Reactor
+  paint3DHoloArcReactor(g, cx, arcY, arcR, sec, ea * 0.96, audioPulse, openReady);
+
+  imHoloModules(g, cx, arcY, arcR, ea * openReady, sec, imStackMorph);
+
+  // Delicate lateral holographic wing hairlines & guide points flanking the Arc Reactor
+  g.save();
+  g.globalAlpha = ea * openReady * 0.85;
+  for (const s of [-1, 1]) {
+    const x0 = cx + s * (arcR + 5.5), x1 = cx + s * (arcR + 32 + imStackMorph * 16);
+    const wy = arcY + imMy * 1.1;
+    const wg = g.createLinearGradient(x0, 0, x1, 0);
+    wg.addColorStop(0, 'rgba(38, 196, 246, .88)');
+    wg.addColorStop(0.62, 'rgba(54, 206, 250, .52)');
+    wg.addColorStop(1, 'rgba(54, 206, 250, 0)');
+    g.strokeStyle = wg;
+    g.lineWidth = 0.95;
+    g.beginPath();
+    g.moveTo(x0, wy);
+    g.lineTo(x1 - s * 6, wy);
+    g.lineTo(x1, wy + (imStackMorph > 0.5 ? 3.5 : -3.5));
+    g.stroke();
+
+    // Crisp node dot + small champagne-gold tick
+    g.fillStyle = '#36C6F6';
+    g.beginPath(); g.arc(x0 + s * 1.5, wy, 1.25, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#E8BE62';
+    g.fillRect(x0 + s * 9 - 1.2, wy - 2.3, 2.4, 1.2);
+  }
+  g.restore();
+
+  // 4. Open #stack architectural coupling: 3D crimson/gold/silver dorsal struts + floating flank nano plates + scan arcs
+  if (imStackMorph > 0.04 && st.stackOpen) {
+    const r = stackEl.getBoundingClientRect();
+    if (r.height > 36) {
+      const sa = ea * imStackMorph;
+      const sHalf = r.width * 0.5 - 12, sTop = r.top, sBot = Math.min(FX_IM_H - 6, r.bottom);
+      imStackHardware(g, cx, sHalf, sTop, sBot, sa, sec);
+      const sMidY = sTop + Math.min(r.height * 0.46, 130);
+
+      // Sculpted 3D crimson, gold & silver-titanium dorsal collar brackets bridging #island -> #stack crown
+      g.save();
+      g.globalAlpha = sa * 0.9;
+      for (const s of [-1, 1]) {
+        const ax = cx + s * 64, bx = cx + s * 84;
+        const bg = g.createLinearGradient(ax, 44, bx, sTop);
+        bg.addColorStop(0, '#D41E24');
+        bg.addColorStop(0.5, '#D8E1EE');
+        bg.addColorStop(1, '#E8BE62');
+        g.strokeStyle = bg;
+        g.lineWidth = 2.0;
+        g.beginPath(); g.moveTo(ax, 44.2); g.lineTo(bx, sTop - 0.5); g.stroke();
+
+        // Brushed silver-titanium knuckle pin at stack crown mount
+        g.fillStyle = '#F2F6FC';
+        g.strokeStyle = 'rgba(22, 12, 16, .6)';
+        g.lineWidth = 0.65;
+        g.beginPath(); g.roundRect(bx - 4.5, sTop - 2.4, 9, 3.4, 1.2); g.fill(); g.stroke();
+      }
+      g.restore();
+
+      // Articulated 3D crimson & gold flank armor plates + subtle curved holographic scan along #stack sides
+      for (const s of [-1, 1]) {
+        const sep = reducedMotion ? 0 : Math.pow(0.5 + 0.5 * Math.sin(sec * 0.78 + (s > 0 ? 1.1 : 3.2)), 2);
+        const fx = cx + s * (sHalf + 11.5 + sep * 3.0) + imMx * 1.2;
+        const fy1 = sMidY - 16 - sep * 1.1 + imMy * 1.2;
+        const fy2 = sMidY + 16 + sep * 1.1 + imMy * 1.2;
+
+        // Subtle silver-titanium side anchor bracket attached directly to #stack's edge
+        g.save();
+        g.globalAlpha = sa * 0.85;
+        g.fillStyle = s < 0 ? '#D21E24' : '#E8BE62';
+        g.strokeStyle = 'rgba(255, 244, 212, .72)';
+        g.lineWidth = 0.65;
+        g.beginPath();
+        g.roundRect(cx + s * (sHalf + 0.5) - (s < 0 ? 3.2 : 0), sMidY - 12, 3.2, 24, 1.3);
+        g.fill(); g.stroke();
+        if (sep > 0.2) {
+          g.strokeStyle = `rgba(126, 236, 255, ${((sep - 0.2) * 0.55).toFixed(3)})`;
+          g.lineWidth = 0.7;
+          g.beginPath();
+          g.moveTo(cx + s * (sHalf + 3.5), sMidY - 8); g.lineTo(fx - s * 3.5, fy1);
+          g.moveTo(cx + s * (sHalf + 3.5), sMidY + 8); g.lineTo(fx - s * 3.5, fy2);
+          g.stroke();
+        }
+        g.restore();
+
+        paint3DArmorChevron(g, fx, fy1, 9.8, 4.5, s * (-0.2 - sep * 0.12), s < 0, s, sa * 0.94, sep * 0.7);
+        paint3DArmorChevron(g, fx, fy2, 9.8, 4.5, s * (0.2 + sep * 0.12), s > 0, s, sa * 0.94, sep * 0.7);
+
+        if (r.height > 110) {
+          paintHoloScanWing(g, cx + s * (sHalf - 2), sMidY, 27, s, sec * 0.85 + 0.8, sa * 0.72, audioPulse);
+        }
+
+        // Flush-mounted brushed gold & crimson lower corner armor clasp hugging #stack
+        if (sBot - sTop > 90) {
+          g.save();
+          g.globalAlpha = sa * 0.88;
+          g.strokeStyle = s < 0 ? '#E8BE62' : '#D82228';
+          g.lineWidth = 2.0;
+          const cxCorner = cx + s * (sHalf + 1.2);
+          g.beginPath();
+          g.moveTo(cxCorner, sBot - 22);
+          g.lineTo(cxCorner, sBot - 11);
+          g.quadraticCurveTo(cxCorner, sBot + 1, cxCorner - s * 12, sBot + 1);
+          g.lineTo(cxCorner - s * 22, sBot + 1);
+          g.stroke();
+          g.restore();
+        }
+      }
+    }
+  }
+}
+
+const imBusy = (t) => imOn && (
+  t - imPillTr.at < imPillTr.dur ||
+  t - imStackTr.at < imStackTr.dur ||
+  t - imCurAt < 650 ||
+  imEye > 0.004 ||
+  Math.abs(imPrevW - island.offsetWidth) > 0.5 ||
+  (imExp > 0.01 && imExp < 0.99)
+);
+
 // whichever of these the current skin needs; the rest are switched off first so two never share the canvas
 let aura = null;
 function drawAura(t, dt, live) {
-  const want = !st.tucked && skyA > 0.5 && ['venom', 'cloud', 'water', 'lava', 'ice', 'spider'].includes(lookNow) ? lookNow : null;
+  const want = !st.tucked && skyA > 0.5 && ['venom', 'cloud', 'water', 'lava', 'ice', 'spider', 'jarvis'].includes(lookNow) ? lookNow : null;
   if (want !== aura) {
-    drawGoo(t, 0, false); drawCloud(t, 0, false); drawBody(t, 0, null); drawIce(t, 0, false); drawSpider(t, 0, false);
+    drawGoo(t, 0, false); drawCloud(t, 0, false); drawBody(t, 0, null); drawIce(t, 0, false); drawSpider(t, 0, false); drawIronMan(t, 0, false);
     aura = want;
-    document.body.classList.toggle('scene', !!want && want !== 'spider');
+    document.body.classList.toggle('scene', !!want && want !== 'spider' && want !== 'jarvis');
     document.body.classList.toggle('venom', want === 'venom');
   }
   if (want === 'venom') drawGoo(t, dt, true, live);
   else if (want === 'spider') drawSpider(t, dt, true, live);
+  else if (want === 'jarvis') drawIronMan(t, dt, true, live);
   else if (want === 'cloud') drawCloud(t, dt, true, live);
   else if (want === 'ice') drawIce(t, dt, true, live);
   else if (want) drawBody(t, dt, want, live);
@@ -1898,7 +3291,7 @@ function drawLook(t, dt, live) {
   g.clearRect(0, 0, SKY_W, SKY_H);
   if (skyA < 0.01) return;
   // behind a row of buttons or a line of text the skin steps back, so everything stays easy to read
-  const full = ['cloud', 'water', 'lava', 'ice', 'spider'].includes(lookDrawn);
+  const full = ['cloud', 'water', 'lava', 'ice', 'spider', 'jarvis'].includes(lookDrawn);
   const want = cur === 'idle' || full ? 1 : cur === 'media' || cur === 'held' ? 0.72 : lookDrawn === 'sky' ? 0.8 : 0.55;
   dimA += (want - dimA) * 0.18;
   const W = island.clientWidth, x0 = (SKY_W - W) / 2;
@@ -1912,6 +3305,7 @@ function frame(t) {
   const playing = st.media.playing && musicOn();
   const look = st.skin !== 'black' ? st.skin : playing && st.visuals && st.react ? 'sky' : null;      // one theme for everything; plain black gets the night sky while music plays
   document.body.classList.toggle('jarvis', look === 'jarvis');
+  document.body.classList.toggle('im-idle', look === 'jarvis' && cur === 'idle');
   document.body.classList.toggle('spider', look === 'spider');
   document.body.classList.toggle('sp-idle', look === 'spider' && cur === 'idle');
   if (look !== lookNow) {
@@ -1929,8 +3323,8 @@ function frame(t) {
       return;
     }
     if (st.tucked) { drawAura(t, 0, false); return; }
-    const step = look === 'spider' ? (spBusy(t) ? 14 : 30) : (aura ? 24 : 45);
-    if (t - lastPaint < step) return;       // resting skins stay featherlight; Spider-Man wakes to 60fps on web-shoot or hover
+    const step = look === 'spider' ? (spBusy(t) ? 14 : 30) : look === 'jarvis' ? (imBusy(t) ? 14 : 26) : (aura ? 24 : 45);
+    if (t - lastPaint < step) return;       // resting skins stay featherlight; Spider-Man & Iron Man wake to 60fps on transitions or hover
   }
   idleFrames = 0;
   const dt = Math.min(0.05, (t - lastT) / 1000); lastT = t; lastPaint = t;
@@ -1938,7 +3332,9 @@ function frame(t) {
 
   const glowOn = look === 'spider'
     ? (playing && st.react ? skyA * clamp(0.14 + bass * 0.16, 0, 0.28) : cur !== 'idle' ? skyA * 0.14 : 0)
-    : (playing && st.react && (!aura || aura === 'lava') ? skyA * clamp(0.1 + bass * 0.34, 0, 0.42) : 0);
+    : look === 'jarvis'
+      ? (playing && st.react ? skyA * clamp(0.16 + bass * 0.16, 0, 0.3) : cur !== 'idle' ? skyA * 0.15 : imEye * 0.1)
+      : (playing && st.react && (!aura || aura === 'lava') ? skyA * clamp(0.1 + bass * 0.34, 0, 0.42) : 0);
   glow.style.opacity = glowOn.toFixed(3);
   glow.style.transform = `scale(${(1 + bass * 0.1).toFixed(3)}, ${(1 + bass * 0.45).toFixed(3)})`;
   if (st.react) { drawLook(t, dt, playing); drawAura(t, dt, playing); }
@@ -1952,7 +3348,11 @@ function frame(t) {
   if (cur === 'media') {
     const w = barsC.width, h = barsC.height, n = 5, bw = 6, gap = 5, x0 = (w - (n * bw + (n - 1) * gap)) / 2;
     barsG.clearRect(0, 0, w, h);
-    const spCols = look === 'spider' ? ['#F04449', '#E8EDF5', '#FFFFFF', '#E8EDF5', '#398BE0'] : null;
+    const spCols = look === 'spider'
+      ? ['#F04449', '#E8EDF5', '#FFFFFF', '#E8EDF5', '#398BE0']
+      : look === 'jarvis'
+        ? ['#EE3C35', '#F3CE76', '#FFFFFF', '#7CE8FF', '#E8BE62']
+        : null;
     barsG.fillStyle = document.body.classList.contains('daylight') ? '#18222f' : '#fff';
     for (let i = 0; i < n; i++) {
       if (spCols) barsG.fillStyle = spCols[i];
@@ -2641,7 +4041,7 @@ const TOUR = [
   ['clipboard', 'Clipboard history', 'Everything you copied, with images and pins', 'clips'],
   ['key', 'Passwords', 'Makes one, asks what it is for, keeps it encrypted', 'vault'],
   ['timer', 'Timer', 'Stays in sight while it runs', 'timer'],
-  ['gear', 'Themes and settings', 'Spider-Man, Venom, J.A.R.V.I.S., liquid skins, and every switch', 'settings'],
+  ['gear', 'Themes and settings', 'Spider-Man, Iron Man, Venom, liquid skins, and every switch', 'settings'],
 ];
 function renderTour() {
   $('#stack-clear').classList.add('hidden');
@@ -2678,7 +4078,7 @@ function emote(name, ms) {
 }
 const blink = () => emote('blink', 130);
 (function faceLoop() {
-  if (cur === 'idle' && !st.tucked && st.face === 'eyes' && !face.className) {
+  if (cur === 'idle' && !st.tucked && st.face === 'eyes' && !face.className && lookNow !== 'jarvis') {
     const r = Math.random(), night = new Date().getHours() < 6;
     if (night && r < 0.45) emote('sleepy', 2800);
     else if (r < 0.6) blink();
@@ -2691,7 +4091,15 @@ const blink = () => emote('blink', 130);
   setTimeout(faceLoop, 1700 + Math.random() * 3600);
 })();
 // the eyes follow the cursor a little when it comes near
-window.qazi.onCursor(({ x, y }) => {
+const feedIronCursor = (x, y, inside, fromIpc) => {
+  imCurX = x; imCurY = y;
+  imCurIn = inside;
+  imCurIpc = !!fromIpc;
+  if (inside) imCurAt = performance.now();
+};
+window.addEventListener('pointermove', (e) => { if (imOn) feedIronCursor(e.clientX, e.clientY, true, false); }, { passive: true });
+window.addEventListener('pointerleave', () => { if (imOn) { imCurIn = false; imCurAt = performance.now(); } }, { passive: true });
+window.qazi.onCursor(({ x, y, hold }) => {
   const dx = x - window.innerWidth / 2, dy = y - 26, d = Math.hypot(dx, dy);
   const k = d < 420 && d > 1 ? Math.min(1, d / 120) : 0;
   face.style.setProperty('--lx', (k ? dx / d * 2.4 * k : 0).toFixed(2) + 'px');
@@ -2700,6 +4108,10 @@ window.qazi.onCursor(({ x, y }) => {
     const now = performance.now(), dt = Math.max(0.012, (now - spCurAt) / 1000);
     if (now - spCurAt < 180) { spCvx = (x - spCurX) / dt; spCvy = (y - spCurY) / dt; }
     spCurX = x; spCurY = y; spCurAt = now;
+  }
+  if (imOn) {
+    const inside = Number.isFinite(x) && Number.isFinite(y) && x > -85 && x < FX_W + 85 && y > -85 && y < 515;
+    feedIronCursor(x, y, inside, !hold);
   }
 });
 
