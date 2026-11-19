@@ -24,7 +24,7 @@ catches your notifications, remembers what you copied, holds your files, and bli
 ## What it does
 
 - **Now playing.** Title, artist, cover, controls and a scrubber for whatever is playing on the system. Films and fullscreen games are left alone.
-- **Themes that move.** Liquid skins that drift at rest and flood with colour on the beat (or stay calm, if you switch that off). In **Spider-Man** the pill wears classic crimson-and-blue suit weave, expressive white shutter lenses, 3D silk webs and a tiny hanging spider; in **Venom** it turns to black goo.
+- **Themes that move.** Liquid skins that drift at rest and flood with colour on the beat (or stay calm, if you switch that off). In **Spider-Man** the pill wears classic crimson-and-blue suit weave, expressive white shutter lenses, 3D silk webs and a tiny hanging spider; in **Iron Man** it has proximity-lit eyes, mechanical armor, floating nano plates and a holographic arc reactor; in **Venom** it turns to black goo.
 - **Notifications in one line.** Click to open that chat. While you are using the pill they wait beside it instead of taking it over.
 - **One hover away.** Screenshot, text grab, clipboard history, quick note, passwords, timer, notifications, settings.
 - **Smart copy.** A copied link can be opened, a sum gets its answer, a date its twin in the other calendar (Gregorian ⇄ Shamsi), a colour its swatch.
@@ -89,6 +89,7 @@ Windows today. A Linux version is being worked on; the backend talks to Windows 
 - **پخش موزیک:** نام آهنگ، خواننده، کاور، دکمه‌های کنترل و نوار جلو و عقب بردن. با فیلم و بازی تمام‌صفحه کاری ندارد.
 - **تم‌های متحرک:** کموهای مایع که آرام حرکت می‌کنند و با ضرب آهنگ پر از رنگ می‌شوند (می‌شود واکنش به موزیک را خاموش کرد).
 - **اسپایدرمن کلاسیک:** لنزهای سفید متحرک روی بافت لباس قرمز و آبی، تارهای سه‌بعدی آویزان، عنکبوت کوچک زنده، انیمیشن پرتاب تار هنگام باز شدن و پنل‌های شیشه‌ای.
+- **آیرون‌من:** چشم‌های واکنش‌پذیر به ماوس، زره مکانیکی قرمز و طلایی، قطعات نانو و آرک‌ری‌اکتور هولوگرافیک.
 - **ونوم:** خود جزیره به لجن سیاه زنده تبدیل می‌شود.
 - **نوتیفیکیشن در یک خط:** با کلیک همان چت باز می‌شود. وقتی مشغول کار با جزیره‌ای، کنار آن منتظر می‌ماند.
 - **کپی هوشمند:** لینکِ کپی‌شده باز می‌شود، حساب جواب می‌گیرد، تاریخ میلادی و شمسی به هم تبدیل می‌شوند.

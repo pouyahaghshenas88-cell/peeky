@@ -306,74 +306,8 @@ body.venom #i-face i { width: 12px; height: 10px; border-radius: 0; clip-path: p
 body.venom #i-face i:last-child { clip-path: polygon(100% 0, 0 50%, 18% 100%, 88% 78%); }
 body.venom #i-face.happy i, body.venom #i-face.sleepy i { border: 0; background: #fff; height: 5px; }
 .sw-venom { background: radial-gradient(circle at 32% 30%, #e6eaf2 0 9%, #3a3d47 22%, #000 60%); }
-.sw-jarvis { background: radial-gradient(circle at 50% 50%, #d2fcff 0 8%, #28d8ec 12% 20%, #063b55 24% 34%, #020914 40% 100%); box-shadow: inset 0 0 0 1px rgba(94, 235, 250, .7), 0 0 7px rgba(40, 216, 236, .25); }
 .sws { gap: 4px; }
 .sws button { width: 17px; height: 17px; }
-
-/* ------------------------------------------------ J.A.R.V.I.S.: a quiet, instrument-grade holographic glass skin */
-body.jarvis #island {
-  background: linear-gradient(155deg, rgba(5, 20, 35, .98), rgba(2, 9, 20, .98) 58%, rgba(4, 25, 39, .98));
-  box-shadow: 0 5px 22px rgba(0, 0, 0, .58), 0 0 14px rgba(14, 184, 215, .13), inset 0 0 0 1px rgba(119, 237, 250, .34), inset 0 1px 0 rgba(220, 252, 255, .16);
-}
-body.jarvis #island::before {
-  content: ""; position: absolute; z-index: 2; inset: 1px; border-radius: inherit; pointer-events: none;
-  border: 1px solid rgba(78, 220, 241, .19);
-  box-shadow: inset 0 0 12px rgba(30, 184, 220, .09);
-}
-body.jarvis #island::after {
-  content: ""; position: absolute; z-index: 2; top: 3px; left: -25%; width: 25%; height: 1px; pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(125, 246, 255, .9), transparent);
-  box-shadow: 0 0 5px rgba(57, 223, 243, .7);
-  animation: jarvis-scan 6.8s linear infinite;
-}
-@keyframes jarvis-scan { to { left: 105%; } }
-body.jarvis #island.hover { box-shadow: 0 6px 25px rgba(0, 0, 0, .62), 0 0 20px rgba(14, 184, 215, .2), inset 0 0 0 1px rgba(119, 237, 250, .48), inset 0 1px 0 rgba(220, 252, 255, .2); }
-body.jarvis #island.tucked, body.jarvis #island.tucked.hover { background: rgba(3, 13, 25, .8); }
-body.jarvis #island.tucked::before, body.jarvis #island.tucked::after { opacity: 0; }
-body.jarvis #island .view { text-shadow: 0 0 8px rgba(64, 218, 240, .16); }
-body.jarvis #island .dim, body.jarvis #island #m-artist { color: rgba(190, 229, 239, .67); }
-body.jarvis #island .strong, body.jarvis #island #t-time { color: #e5fbff; }
-body.jarvis #island .glyph, body.jarvis #island .ib { color: rgba(190, 245, 251, .88); }
-body.jarvis #island .ib:hover { background: rgba(52, 205, 230, .16); color: #e8fdff; }
-body.jarvis #island .ib.solid { color: #03111c; background: #8beefa; box-shadow: 0 0 10px rgba(40, 216, 236, .26); }
-body.jarvis #island .ib.solid:hover { background: #d8fcff; }
-body.jarvis #island #i-face i { background: #8beefa; box-shadow: 0 0 7px rgba(40, 216, 236, .72); }
-body.jarvis #island #in-text { caret-color: #5ce5f5; }
-body.jarvis #island #m-timer, body.jarvis #island #tm-time.done { color: #ffc86f; }
-body.jarvis #island #seek::before { background: rgba(145, 227, 239, .25); }
-body.jarvis #island #seek-fill { background: #6ce9f7; box-shadow: 0 0 7px rgba(40, 216, 236, .6); }
-body.jarvis #island #seek-knob { background: #c5fbff; }
-body.jarvis #glow { background: linear-gradient(90deg, #087f9d, #28d8ec, #a5f6ff); filter: blur(20px); }
-body.jarvis #flash { background: rgba(3, 13, 25, .96); color: #dbfbff; }
-body.jarvis #stack .row, body.jarvis #stack-clear, body.jarvis #stack-head .search, body.jarvis #stack-head .pillbtn {
-  background: rgba(3, 15, 28, .97);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, .42), inset 0 0 0 1px rgba(78, 202, 224, .2);
-}
-body.jarvis #stack .row:hover { background: rgba(8, 35, 51, .98); box-shadow: 0 4px 15px rgba(0, 0, 0, .46), inset 0 0 0 1px rgba(76, 218, 239, .38); }
-body.jarvis #stack .row.empty, body.jarvis #stack .row.actions { background: transparent; box-shadow: none; }
-body.jarvis #stack .row.empty:hover, body.jarvis #stack .row.actions:hover { background: transparent; box-shadow: none; }
-body.jarvis #stack .row.pinned, body.jarvis #stack .row.set.upd, body.jarvis #stack .row.loc.cur { box-shadow: 0 4px 14px rgba(0, 0, 0, .4), inset 0 0 0 1px rgba(48, 213, 235, .52); }
-body.jarvis #stack .row .ic:not(.plain) { background: linear-gradient(145deg, #087f9d, #155073); }
-body.jarvis #stack .row.vault .ic { background: linear-gradient(145deg, #087f9d, #155073); }
-body.jarvis #stack .row .chip { background: rgba(40, 190, 216, .16); color: #9df2fb; }
-body.jarvis #stack .sw.on { background: linear-gradient(90deg, #087f9d, #28d8ec); }
-body.jarvis #stack .sw.on::after { background: #e6fdff; }
-body.jarvis #stack .seg button.on, body.jarvis #stack .row.set .go, body.jarvis #stack-head .pillbtn:hover, body.jarvis #stack-clear:hover {
-  background: #36d4e9; color: #02121c;
-}
-body.jarvis #stack-head .search:focus-within { box-shadow: 0 4px 14px rgba(0, 0, 0, .42), inset 0 0 0 1.5px rgba(75, 223, 241, .75); color: #c8faff; }
-body.jarvis #stack-head input { caret-color: #5ce5f5; }
-body.jarvis #stack .row.tour.can:hover { background: rgba(8, 35, 51, .98); }
-body.jarvis #stack .row.tour .ic.plain, body.jarvis #stack .row.set.upd .ic.plain { color: #84eff9; background-color: rgba(40, 190, 216, .15); }
-body.jarvis #stack .row .keys { background: rgba(40, 190, 216, .13); color: #b6f4fa; }
-body.jarvis #side { background: rgba(3, 15, 28, .97); box-shadow: 0 4px 14px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(78, 202, 224, .3); }
-body.jarvis #side:hover { background: rgba(8, 35, 51, .98); }
-body.jarvis #side .ic { background: linear-gradient(145deg, #087f9d, #155073); }
-body.jarvis #t-net.tag { background: rgba(40, 190, 216, .16); color: #9df2fb; }
-body.jarvis #t-net.tag.bad { background: rgba(255, 77, 94, .2); color: #ff9aa4; }
-@media (prefers-reduced-motion: reduce) {
-  body.jarvis #island::after { animation: none; }
-}
 
 /* ------------------------------------------------ scenes: cloud (white by day: dark text), aurora, ocean, fire */
 #fx { position: absolute; z-index: 1; top: 0; left: 50%; width: 700px; height: 110px; margin-left: -350px; pointer-events: none; }
@@ -1140,4 +1074,770 @@ body.spider #g-sym.off { color: rgba(146, 155, 170, .45); opacity: 1; }
   body.spider [data-view="tools"].on .ib,
   body.spider #stack.fresh .row { animation: none; }
   body.spider #stack { transition: opacity .15s; transform: none; }
+}
+
+/* ------------------------------------------------ Iron Man / Stark Visual Theme (replaces J.A.R.V.I.S.) */
+.sw-jarvis {
+  background:
+    radial-gradient(circle at 50% 78%, #FFFFFF 0 7%, #5CE1FF 9% 16%, transparent 26%),
+    linear-gradient(135deg, #F03E37 0%, #C4161C 38%, #FFF1C2 43%, #E8BE62 56%, #C58E2E 68%, #8E0F15 74%, #C4161C 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 241, 194, .75), 0 1px 5px rgba(196, 22, 28, .4);
+}
+
+body.jarvis {
+  font-family: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: #FFFFFF;
+  letter-spacing: .12px;
+  --dim: rgba(244, 238, 228, .76);
+  --im-eye: 0;
+  --im-lx: 0px;
+  --im-ly: 0px;
+  --im-fx: 50%;
+  --im-fy: 50%;
+  --im-mx: 50%;
+  --im-my: 28%;
+  --im-ma: 0;
+  --im-sx: 50%;
+  --im-sy: 14%;
+  --im-px: 0px;
+  --im-py: 0px;
+  --im-ease: cubic-bezier(.22, 1, .34, 1);
+}
+
+/* Layering: #glow (0) < #island (2) < #stack (3) < #fx 3D mechanical exoskeleton, holo Arc Reactor, nano-plates & scan (4) < #side (5) */
+body.jarvis #fx { z-index: 4; width: 700px; height: 428px; pointer-events: none; }
+body.jarvis #stack { z-index: 3; }
+body.jarvis #side { z-index: 5; }
+
+/* 3D CNC-Machined Anodized Crimson + Satin 18K Gold Stark Armor Chassis */
+body.jarvis #island {
+  z-index: 2;
+  border-radius: 6px 13px 6px 13px;
+  background:
+    linear-gradient(128deg,
+      rgba(196, 22, 28, .96) 0%,
+      rgba(138, 15, 22, .93) 24%,
+      rgba(68, 22, 26, .92) 48%,
+      rgba(154, 104, 30, .92) 76%,
+      rgba(196, 22, 28, .96) 100%);
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+  box-shadow:
+    0 9px 26px rgba(18, 6, 10, .44),
+    0 2px 6px rgba(18, 6, 10, .28),
+    -8px 4px 18px rgba(196, 22, 28, .22),
+    8px 4px 18px rgba(232, 190, 98, .20),
+    inset 0 0 0 1.2px rgba(248, 216, 136, .66),
+    inset 0 0 0 2.4px rgba(18, 8, 12, .52),
+    inset 0 1.3px 0 rgba(255, 248, 220, .68),
+    inset 0 -2px 3.5px rgba(54, 8, 12, .65);
+  transition:
+    width .54s var(--im-ease),
+    border-radius .36s var(--im-ease),
+    transform .32s var(--im-ease),
+    box-shadow .28s var(--im-ease),
+    background .32s var(--im-ease);
+}
+body.jarvis.im-idle #island {
+  border-radius: 7px 7px 12px 12px;
+  background: linear-gradient(172deg, #D92626 0%, #B3141B 42%, #820C13 100%);
+  box-shadow:
+    0 7px 22px rgba(20, 6, 10, .42),
+    0 2px 5px rgba(20, 6, 10, .28),
+    0 3px 14px rgba(196, 22, 28, .20),
+    inset 0 0 0 1.2px rgba(248, 216, 136, .68),
+    inset 0 0 0 2.4px rgba(18, 8, 12, .55),
+    inset 0 1.3px 0 rgba(255, 248, 220, .72),
+    inset 0 -2.2px 4px rgba(54, 7, 11, .68);
+}
+body.jarvis #sky { opacity: 1; }
+body.jarvis:not(.im-idle) #sky { opacity: .95; }
+body.jarvis #dots { z-index: 4; top: 5px; right: 11px; }
+body.jarvis #dots i { box-shadow: 0 0 0 1.5px rgba(34, 10, 12, .75); }
+
+/* Precision 3D double-stepped CNC champagne-gold & dark-titanium mechanical bezel painted ABOVE #sky */
+body.jarvis #island::before {
+  content: ""; position: absolute; z-index: 2; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 248, 226, .20) 0%, rgba(255, 255, 255, .03) 34%, transparent 62%, rgba(44, 6, 10, .30) 100%);
+  box-shadow:
+    inset 0 0 0 1.2px rgba(248, 216, 136, .68),
+    inset 0 0 0 2.5px rgba(16, 8, 12, .56),
+    inset 0 1.4px 0 rgba(255, 250, 226, .74),
+    inset 0 -1.8px 3px rgba(48, 8, 12, .62),
+    inset 2px 0 8px rgba(240, 62, 55, .18),
+    inset -2px 0 8px rgba(238, 198, 104, .18);
+  transition: box-shadow .24s var(--im-ease), opacity .2s;
+}
+body.jarvis #island.hover::before {
+  box-shadow:
+    inset 0 0 0 1.1px rgba(255, 232, 166, .78),
+    inset 0 1.3px 0 rgba(255, 251, 234, .75),
+    inset 0 -1.5px 2.5px rgba(92, 225, 255, .36),
+    inset 2px 0 10px rgba(240, 62, 55, .22),
+    inset -2px 0 10px rgba(92, 225, 255, .20);
+}
+body.jarvis #island.dropping::before {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(112, 230, 255, .82),
+    inset 0 1.2px 0 rgba(255, 248, 220, .62),
+    inset 0 -1.5px 3px rgba(52, 8, 12, .5);
+}
+/* Dynamic mouse-reactive brushed metal & holographic workshop light reflection */
+body.jarvis #island::after {
+  content: ""; position: absolute; z-index: 2; inset: 0; border-radius: inherit; pointer-events: none;
+  opacity: var(--im-ma, 0);
+  background:
+    radial-gradient(108px 40px at var(--im-mx, 50%) var(--im-my, 25%), rgba(255, 246, 216, .20), rgba(92, 225, 255, .10) 48%, transparent 78%),
+    radial-gradient(76px 10px at var(--im-mx, 50%) 0%, rgba(255, 248, 222, .52), transparent 72%);
+  transition: opacity .26s ease;
+}
+body.jarvis #island.hover {
+  transform: translateX(-50%) scale(1.022) translateY(-.5px);
+  box-shadow:
+    0 10px 28px rgba(18, 6, 10, .46),
+    -10px 4px 20px rgba(214, 32, 36, .24),
+    10px 4px 20px rgba(236, 194, 98, .24),
+    0 4px 16px rgba(92, 225, 255, .14),
+    inset 0 0 0 1px rgba(255, 232, 166, .72),
+    inset 0 1.2px 0 rgba(255, 250, 230, .65),
+    inset 0 -2px 3px rgba(52, 8, 12, .56);
+}
+body.jarvis #island.bump { animation: im-bump .44s var(--im-ease); }
+@keyframes im-bump { 35% { transform: translateX(-50%) scale(1.04, .98); } }
+body.jarvis #island.tucked, body.jarvis #island.tucked.hover {
+  background: linear-gradient(90deg, #9E1218, #E2B456 50%, #9E1218);
+  box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+body.jarvis #island.tucked::before, body.jarvis #island.tucked::after { opacity: 0; }
+
+/* Controlled warm crimson-gold + subtle arc-cyan aura (never harsh permanent neon) */
+body.jarvis #glow {
+  background: linear-gradient(98deg, rgba(208, 28, 34, .78), rgba(236, 192, 96, .68) 46%, rgba(92, 225, 255, .48) 56%, rgba(208, 28, 34, .78));
+  filter: blur(22px);
+}
+
+/* Precision engineered view entrance */
+body.jarvis #island .view {
+  z-index: 3;
+  color: #FFFFFF;
+  text-shadow: 0 1px 2.5px rgba(28, 6, 10, .62);
+  transition: opacity .2s var(--im-ease), transform .4s var(--im-ease), filter .2s var(--im-ease);
+}
+body.jarvis [data-view="tools"].on .ib { animation: im-slot .38s var(--im-ease) both; }
+body.jarvis [data-view="tools"].on .ib:nth-of-type(2) { animation-delay: 16ms; }
+body.jarvis [data-view="tools"].on .ib:nth-of-type(3) { animation-delay: 32ms; }
+body.jarvis [data-view="tools"].on .ib:nth-of-type(4) { animation-delay: 48ms; }
+body.jarvis [data-view="tools"].on .ib:nth-of-type(5) { animation-delay: 64ms; }
+body.jarvis [data-view="tools"].on .ib:nth-of-type(6) { animation-delay: 80ms; }
+body.jarvis [data-view="tools"].on .ib:nth-of-type(7) { animation-delay: 96ms; }
+body.jarvis [data-view="tools"].on .ib:nth-of-type(8) { animation-delay: 112ms; }
+body.jarvis [data-view="tools"].on .ib:nth-of-type(9) { animation-delay: 128ms; }
+body.jarvis [data-view="tools"].on .ib:nth-of-type(10) { animation-delay: 144ms; }
+body.jarvis [data-view="tools"].on .ib:nth-of-type(11) { animation-delay: 160ms; }
+@keyframes im-slot { from { opacity: 0; transform: scale(.82) translateY(2.5px); } }
+
+/* ------------------------------------------------ Collapsed State: Iconic Iron Man Mask Eyes ONLY (Section 8) */
+body.jarvis [data-view="idle"] { padding: 0 21px; }
+body.jarvis [data-view="idle"].faceon { padding: 0 22px; }
+body.jarvis #i-time { color: #FFFFFF; text-shadow: 0 1px 3px rgba(36, 8, 10, .75); }
+body.jarvis #i-time.count { color: #FFF0BE; }
+
+/* Completely OFF and dark at rest (--im-eye: 0) with sculpted metallic socket bevel;
+   smoothly powers up to crisp white with soft ice-blue tint as cursor nears */
+body.jarvis #i-face {
+  gap: 9px; height: 14px; align-items: center;
+  filter:
+    drop-shadow(0 1.2px 0 rgba(255, 240, 192, .58))
+    drop-shadow(0 -1px 1.2px rgba(48, 12, 8, .78))
+    drop-shadow(0 0 6px rgba(190, 238, 255, calc(var(--im-eye, 0) * .72)))
+    drop-shadow(0 0 13px rgba(96, 214, 252, calc(var(--im-eye, 0) * .38)));
+}
+body.jarvis #i-face i {
+  position: relative; width: 24px; height: 10px; border: 0; border-radius: 0;
+  /* Machined titanium-gunmetal recessed eye bezel — sharp, recognizable form even at 0% power */
+  background: linear-gradient(180deg, #1E242E 0%, #0E1218 48%, #7E8C9F 100%);
+  clip-path: path('M 0.9 1.0 L 14.2 2.6 L 23.3 4.8 C 23.8 5.0 23.9 5.5 23.5 5.9 L 20.6 8.7 C 20.1 9.1 19.3 9.2 18.5 9.1 L 3.4 7.5 C 2.5 7.4 1.9 6.9 1.5 6.0 L 0.3 2.1 C 0.1 1.4 0.4 0.9 0.9 1.0 Z');
+  box-shadow: none;
+  transform: translate(var(--im-lx, 0px), var(--im-ly, 0px));
+  transition: transform .18s var(--im-ease);
+}
+body.jarvis #i-face i:last-child {
+  clip-path: path('M 23.1 1.0 L 9.8 2.6 L 0.7 4.8 C 0.2 5.0 0.1 5.5 0.5 5.9 L 3.4 8.7 C 3.9 9.1 4.7 9.2 5.5 9.1 L 20.6 7.5 C 21.5 7.4 22.1 6.9 22.5 6.0 L 23.7 2.1 C 23.9 1.4 23.6 0.9 23.1 1.0 Z');
+}
+body.jarvis #i-face i::before,
+body.jarvis #i-face i::after {
+  content: ""; position: absolute; inset: 0;
+  clip-path: path('M 2.1 2.5 L 13.9 3.9 L 21.6 5.6 L 19.4 7.7 L 4.1 6.2 L 2.8 4.9 Z');
+}
+body.jarvis #i-face i:last-child::before,
+body.jarvis #i-face i:last-child::after {
+  clip-path: path('M 21.9 2.5 L 10.1 3.9 L 2.4 5.6 L 4.6 7.7 L 19.9 6.2 L 21.2 4.9 Z');
+}
+/* Unlit smoked-obsidian optic cavity — zero emission at rest */
+body.jarvis #i-face i::before {
+  background: linear-gradient(176deg, #07090D 0%, #11161F 58%, #1C2432 100%);
+}
+/* Smoothly ignited Stark mask optic: pure white core with gentle glacial-blue rim */
+body.jarvis #i-face i::after {
+  opacity: var(--im-eye, 0);
+  background:
+    linear-gradient(125deg, transparent 28%, rgba(255, 255, 255, .45) 46%, transparent 62%),
+    radial-gradient(ellipse 74% 88% at var(--im-fx, 50%) var(--im-fy, 52%), #FFFFFF 0%, #F6FDFF 48%, #CEF2FF 78%, #8CE0FF 100%);
+}
+/* Keep eye geometry dignified & engineered — never cartoon happy/sleepy curves */
+body.jarvis #i-face.blink i,
+body.jarvis #i-face.wink i,
+body.jarvis #i-face.squint i,
+body.jarvis #i-face.sleepy i,
+body.jarvis #i-face.happy i,
+body.jarvis #i-face.wide i,
+body.jarvis #i-face.look-l i,
+body.jarvis #i-face.look-r i {
+  width: 24px; height: 10px; border: 0; border-radius: 0;
+  background: linear-gradient(180deg, #1E242E 0%, #0E1218 48%, #7E8C9F 100%);
+  transform: translate(var(--im-lx, 0px), var(--im-ly, 0px));
+}
+body.jarvis #i-face.squint i::after { filter: brightness(1.06); }
+
+/* ------------------------------------------------ Typography, 3D Sculpted Icons & Armored Buttons inside #island */
+body.jarvis [data-view="tools"] { padding: 0 15px 0 18px; gap: 7px; }
+body.jarvis [data-view="tools"] .ib { margin-left: -1.5px; }
+body.jarvis [data-view="media"] { padding: 0 13px 0 13px; gap: 7px; }
+body.jarvis [data-view="held"] { padding: 0 13px 0 14px; }
+body.jarvis [data-view="notif"],
+body.jarvis [data-view="hud"],
+body.jarvis [data-view="vol"],
+body.jarvis [data-view="timer"],
+body.jarvis [data-view="input"],
+body.jarvis [data-view="gen"],
+body.jarvis [data-view="drop"] { padding-left: 16px; padding-right: 14px; }
+
+body.jarvis #island .strong,
+body.jarvis #island #t-time,
+body.jarvis #island #m-title,
+body.jarvis #island #tm-time,
+body.jarvis #island #v-num { color: #FFFFFF; font-weight: 620; }
+body.jarvis #island #n-body,
+body.jarvis #island #h-text,
+body.jarvis #island #in-text,
+body.jarvis #island #g-pass,
+body.jarvis #island .hf .nm { color: #F7F9FC; }
+body.jarvis #island .dim,
+body.jarvis #island #m-artist,
+body.jarvis #island #i-shelf { color: rgba(250, 240, 222, .82); }
+body.jarvis #island #t-date { color: #F9E3A6; transition: color .15s; }
+body.jarvis #island #t-date:hover { color: #FFFFFF; }
+body.jarvis #island #m-timer { color: #FFF0BE; }
+body.jarvis #island #tm-time.done { color: #FFE49E; }
+body.jarvis #island .sep {
+  width: 1px; height: 15px;
+  background: linear-gradient(180deg, transparent, rgba(255, 236, 178, .72), transparent);
+  box-shadow: 1px 0 0 rgba(48, 8, 12, .45);
+}
+body.jarvis #island #in-text { caret-color: #7EE8FF; color: #FFFFFF; }
+body.jarvis #island #in-text::placeholder { color: rgba(244, 232, 212, .52); }
+
+/* 3D dimensional metallic/holographic lift on icons */
+body.jarvis .ib svg,
+body.jarvis .glyph svg,
+body.jarvis .row .ic.plain svg,
+body.jarvis .row .act svg,
+body.jarvis .row .pin svg,
+body.jarvis #stack-head .pillbtn svg,
+body.jarvis .row.actions button svg {
+  filter: drop-shadow(0 -.45px 0 rgba(255, 248, 224, .38)) drop-shadow(0 1.1px 0 rgba(36, 8, 12, .72)) drop-shadow(0 2px 2.5px rgba(0, 0, 0, .24));
+}
+
+body.jarvis #island .glyph { color: #FAE4A8; }
+body.jarvis #island .glyph.blue { color: #8CEBFF; }
+body.jarvis #island .glyph.amber { color: #FFE39A; }
+body.jarvis #island .glyph.red { color: #FF8E86; }
+body.jarvis #island .glyph.green { color: #C8F7FF; }
+body.jarvis #island .glyph.faded { color: rgba(232, 224, 212, .68); }
+
+/* 3D Chamfered Armored Buttons inside #island */
+body.jarvis #island .ib {
+  border-radius: 6px 8px 6px 8px;
+  color: #F8FAFC;
+  background: linear-gradient(165deg, rgba(255, 244, 214, .16) 0%, rgba(28, 16, 22, .38) 100%);
+  box-shadow:
+    0 2px 5px rgba(18, 6, 10, .28),
+    inset 0 0 0 1px rgba(246, 214, 134, .30),
+    inset 0 1px 0 rgba(255, 248, 222, .32),
+    inset 0 -1px 1px rgba(48, 8, 12, .42);
+  transition: background .16s var(--im-ease), transform .2s var(--im-ease), box-shadow .16s var(--im-ease), color .15s;
+}
+body.jarvis #island .ib.small {
+  border-radius: 5px 7px 5px 7px;
+  background: rgba(255, 246, 224, .10);
+  box-shadow: inset 0 0 0 1px rgba(246, 214, 134, .24), inset 0 1px 0 rgba(255, 248, 224, .22);
+  color: #F8FAFC;
+}
+body.jarvis #island .ib:hover {
+  color: #FFFFFF;
+  background: linear-gradient(145deg, rgba(214, 32, 36, .72) 0%, rgba(218, 164, 62, .52) 100%);
+  box-shadow:
+    0 3px 9px rgba(18, 6, 10, .34),
+    inset 0 0 0 1px rgba(255, 236, 174, .78),
+    inset 0 1px 0 rgba(255, 252, 238, .55),
+    0 0 8px rgba(92, 225, 255, .18);
+  transform: translateY(-.5px) scale(1.04);
+}
+body.jarvis #island .ib:active {
+  transform: scale(.90);
+  background: linear-gradient(155deg, #A81319, #9E6E20);
+}
+/* Primary 3D Crimson-Gold Armored Button + Active Holographic Cyan-White State */
+body.jarvis #island .ib.solid {
+  color: #FFFFFF;
+  background: linear-gradient(142deg, #EA3630 0%, #BE161D 52%, #DDA846 100%);
+  box-shadow:
+    0 3px 10px rgba(32, 6, 10, .42),
+    inset 0 0 0 1px rgba(255, 238, 182, .75),
+    inset 0 1px 0 rgba(255, 252, 238, .55),
+    inset 0 -1.5px 2px rgba(74, 8, 12, .55);
+}
+body.jarvis #island .ib.solid:hover {
+  background: linear-gradient(142deg, #F54740 0%, #CF1C23 48%, #ECC062 100%);
+  box-shadow:
+    0 4px 12px rgba(32, 6, 10, .46),
+    0 0 10px rgba(92, 225, 255, .28),
+    inset 0 0 0 1px rgba(214, 248, 255, .85),
+    inset 0 1px 0 rgba(255, 255, 255, .65);
+  transform: translateY(-.5px) scale(1.07);
+}
+body.jarvis #island .ib.active {
+  color: #FFFFFF;
+  background: linear-gradient(142deg, #D92626 0%, #9E141A 48%, #226D8C 100%);
+  box-shadow:
+    0 3px 10px rgba(18, 6, 10, .38),
+    0 0 10px rgba(92, 225, 255, .30),
+    inset 0 0 0 1px rgba(168, 240, 255, .86),
+    inset 0 1px 0 rgba(255, 255, 255, .58);
+}
+body.jarvis #island .ib.live {
+  color: #CCF8FF;
+  box-shadow: inset 0 0 0 1px rgba(126, 232, 255, .62), 0 0 8px rgba(92, 225, 255, .22);
+}
+
+body.jarvis .badge {
+  border-radius: 5px;
+  background: linear-gradient(145deg, #F03E37, #B8141B);
+  color: #FFFFFF;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .42), inset 0 0 0 1px rgba(255, 238, 182, .72);
+}
+body.jarvis .badge.dot {
+  background: #6CE4FF;
+  box-shadow: 0 0 0 2px #5A1216, 0 0 7px rgba(92, 225, 255, .68);
+}
+body.jarvis #t-net.tag {
+  border-radius: 5px;
+  background: rgba(92, 225, 255, .18);
+  color: #E2FAFF;
+  box-shadow: inset 0 0 0 1px rgba(142, 234, 255, .48);
+}
+body.jarvis #t-net.tag.bad {
+  background: rgba(240, 62, 55, .32);
+  color: #FFFFFF;
+  box-shadow: inset 0 0 0 1px rgba(255, 224, 156, .58);
+}
+
+/* Media cover, held files, volume & scrubber */
+body.jarvis #art {
+  border-radius: 6px;
+  background-color: rgba(196, 22, 28, .42);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .38), inset 0 0 0 1px rgba(248, 218, 144, .58);
+}
+body.jarvis #n-icon {
+  border-radius: 7px;
+  background-image: linear-gradient(140deg, #E6322C, #A81319 56%, #E2B456);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, .34), inset 0 0 0 1px rgba(255, 238, 182, .62);
+}
+body.jarvis .hf {
+  border-radius: 7px;
+  background: rgba(255, 248, 232, .10);
+  box-shadow: inset 0 0 0 1px rgba(246, 214, 134, .32), inset 0 1px 0 rgba(255, 250, 232, .26);
+}
+body.jarvis .hf:hover {
+  background: linear-gradient(145deg, rgba(208, 30, 34, .52), rgba(218, 164, 62, .38));
+  box-shadow: inset 0 0 0 1px rgba(255, 236, 174, .72), 0 3px 8px rgba(0, 0, 0, .3);
+}
+body.jarvis .hf .rm { background: #C4161C; color: #FFFFFF; box-shadow: 0 1px 3px rgba(0, 0, 0, .4), inset 0 0 0 1px #F5D688; }
+body.jarvis .vbar {
+  height: 6px; border-radius: 3px;
+  background: rgba(24, 12, 16, .52);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .42), inset 0 0 0 1px rgba(246, 214, 134, .30);
+}
+body.jarvis .vbar i {
+  background: linear-gradient(90deg, #D92626, #ECC062 62%, #8CEBFF 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45);
+}
+body.jarvis #island #seek { z-index: 4; }
+body.jarvis #island #seek::before { background: rgba(255, 236, 178, .24); }
+body.jarvis #island #seek-fill { background: linear-gradient(90deg, #E22E2B, #ECC265 60%, #7EE8FF 100%); }
+body.jarvis #island #seek-knob {
+  background: #FFFFFF;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, .45), 0 0 0 2px #D9A441, 0 0 7px rgba(92, 225, 255, .55);
+}
+body.jarvis #flash {
+  z-index: 5;
+  background: linear-gradient(130deg, rgba(176, 18, 24, .95), rgba(64, 24, 24, .95) 52%, rgba(178, 128, 38, .94));
+  color: #FFFFFF;
+}
+
+/* Side waiting notification module */
+body.jarvis #side {
+  border-radius: 8px 12px 8px 12px;
+  background: linear-gradient(132deg, rgba(196, 22, 28, .86), rgba(64, 24, 26, .88) 54%, rgba(188, 138, 44, .78));
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  color: #FFFFFF;
+  box-shadow: 0 6px 18px rgba(18, 6, 10, .38), inset 0 0 0 1px rgba(248, 218, 144, .52), inset 0 1px 0 rgba(255, 248, 222, .48);
+}
+body.jarvis #side:hover {
+  background: linear-gradient(132deg, rgba(218, 32, 36, .92), rgba(78, 28, 30, .92) 52%, rgba(212, 160, 56, .86));
+  box-shadow: 0 7px 20px rgba(18, 6, 10, .44), inset 0 0 0 1px rgba(255, 238, 182, .82), 0 0 10px rgba(92, 225, 255, .2);
+}
+body.jarvis #side .ic {
+  border-radius: 6px;
+  background-image: linear-gradient(140deg, #EA3630, #A81319 56%, #E8BE62);
+  box-shadow: inset 0 0 0 1px rgba(255, 240, 192, .58);
+}
+
+/* ------------------------------------------------ Expanded Stark Armored & Holographic Glass Stack (#stack) */
+body.jarvis #stack {
+  top: 84px;
+  width: 452px; margin-left: -226px;
+  padding: 7px 0 9px;
+  transform-origin: 50% 0;
+  transform: translateY(-8px) scale(.96, .92);
+  transition: opacity .24s var(--im-ease), transform .44s var(--im-ease);
+}
+body.jarvis #stack.open { transform: none; }
+
+/* Rich 3D CNC-Machined Anodized Crimson + Brushed Champagne Gold + Translucent Holographic Glass Panel */
+body.jarvis #stack::before {
+  content: ""; position: absolute; z-index: -2; inset: 0 12px;
+  border-radius: 7px 17px 7px 17px; pointer-events: none;
+  background:
+    /* Top brushed gold & silver mechanical header lock rail */
+    linear-gradient(90deg, #C81820 0 18%, #F2CE74 18% 36%, #DCE4F0 36% 64%, #F2CE74 64% 82%, #C81820 82% 100%) 50% 0 / calc(100% - 28px) 2.2px no-repeat,
+    /* Bottom gold & cyan seam hairline */
+    linear-gradient(90deg, transparent, rgba(246, 214, 138, .65) 25%, rgba(92, 225, 255, .58) 50%, rgba(246, 214, 138, .65) 75%, transparent) 50% 100% / calc(100% - 34px) 1.5px no-repeat,
+    radial-gradient(220px 140px at var(--im-sx, 50%) var(--im-sy, 14%), rgba(255, 248, 224, .16), rgba(92, 225, 255, .09) 46%, transparent 76%),
+    radial-gradient(110% 90% at 0% 0%, rgba(232, 46, 42, .38), transparent 56%),
+    radial-gradient(110% 90% at 100% 0%, rgba(242, 202, 108, .32), transparent 54%),
+    radial-gradient(100% 85% at 100% 100%, rgba(82, 218, 252, .16), transparent 52%),
+    linear-gradient(136deg,
+      rgba(192, 22, 28, .68) 0%,
+      rgba(126, 15, 22, .56) 28%,
+      rgba(40, 22, 28, .62) 54%,
+      rgba(132, 88, 24, .54) 80%,
+      rgba(192, 138, 40, .60) 100%),
+    rgba(28, 20, 26, .82);
+  backdrop-filter: blur(26px) saturate(148%);
+  -webkit-backdrop-filter: blur(26px) saturate(148%);
+  box-shadow:
+    0 15px 34px rgba(18, 6, 10, .44),
+    0 3px 9px rgba(18, 6, 10, .28),
+    -9px 6px 22px rgba(196, 22, 28, .22),
+    9px 8px 22px rgba(232, 190, 98, .20),
+    inset 0 0 0 1.25px rgba(248, 216, 138, .66),
+    inset 0 0 0 2.8px rgba(14, 8, 12, .62),
+    inset 0 0 0 3.6px rgba(196, 208, 224, .22),
+    inset 0 1.4px 0 rgba(255, 248, 220, .62),
+    inset 0 -2px 4px rgba(52, 8, 12, .58);
+}
+
+/* Precision etched Stark mechanical armor panel seams & holographic Arc schematic with mouse parallax */
+body.jarvis #stack::after {
+  content: ""; position: absolute; z-index: -1; inset: 1px 13px;
+  border-radius: 6px 16px 6px 16px; pointer-events: none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180' fill='none'%3E%3Cpath d='M0 32L38 32L56 12L134 12M0 64L24 64L42 46' stroke='%23F7DC94' stroke-opacity='0.18' stroke-width='1.1'/%3E%3Crect x='34' y='29.5' width='5' height='5' rx='1' fill='%23DCE4F0' fill-opacity='0.22'/%3E%3Ccircle cx='56' cy='12' r='2' fill='%237EE8FF' fill-opacity='0.24'/%3E%3Cpath d='M10 96L10 144L28 162' stroke='%237EE8FF' stroke-opacity='0.15' stroke-width='1' stroke-dasharray='4 3'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160' fill='none'%3E%3Ccircle cx='132' cy='132' r='56' stroke='%237EE8FF' stroke-opacity='0.14' stroke-width='1'/%3E%3Ccircle cx='132' cy='132' r='42' stroke='%237EE8FF' stroke-opacity='0.12' stroke-width='2.8' stroke-dasharray='8 5'/%3E%3Ccircle cx='132' cy='132' r='26' stroke='%23F7DC94' stroke-opacity='0.15' stroke-width='1.1'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position:
+    calc(0% + var(--im-px, 0px)) calc(0% + var(--im-py, 0px)),
+    calc(100% + var(--im-px, 0px)) calc(100% + var(--im-py, 0px));
+}
+
+body.jarvis #stack-list { padding: 6px 23px 8px; gap: 6px; max-height: 242px; }
+body.jarvis #stack-head { padding: 6px 23px 3px; }
+body.jarvis #stack-clear { margin-top: 2px; margin-bottom: 2px; }
+
+/* 3D Modular Mechanical Armored & Frosted-Glass Cards */
+body.jarvis #stack .row {
+  border-radius: 5px 11px 5px 11px;
+  background:
+    linear-gradient(90deg, #F0C868 0 3px, rgba(16, 8, 12, .55) 3px 4.2px, transparent 4.2px),
+    linear-gradient(270deg, rgba(212, 34, 38, .68) 0 2px, transparent 2px),
+    linear-gradient(122deg, rgba(212, 34, 38, .24) 0%, rgba(255, 250, 240, .115) 36%, rgba(255, 255, 255, .075) 70%, rgba(236, 194, 102, .20) 100%);
+  box-shadow:
+    0 4px 12px rgba(16, 5, 8, .28),
+    0 1px 2px rgba(16, 5, 8, .20),
+    inset 0 0 0 1px rgba(248, 218, 144, .30),
+    inset 0 1px 0 rgba(255, 248, 224, .32),
+    inset 0 -1px 1.5px rgba(42, 8, 12, .36);
+  transition: transform .22s var(--im-ease), background .18s var(--im-ease), box-shadow .18s var(--im-ease);
+}
+body.jarvis #stack .row:nth-child(even) {
+  background:
+    linear-gradient(90deg, #EE3C35 0 3px, rgba(16, 8, 12, .55) 3px 4.2px, transparent 4.2px),
+    linear-gradient(270deg, rgba(238, 196, 98, .65) 0 2px, transparent 2px),
+    linear-gradient(122deg, rgba(212, 34, 38, .22) 0%, rgba(255, 250, 240, .115) 36%, rgba(255, 255, 255, .075) 70%, rgba(236, 194, 102, .20) 100%);
+}
+body.jarvis #stack .row:hover {
+  transform: translateY(-1px) scale(1.012);
+  background:
+    linear-gradient(90deg, #FFF1C2 0 3px, transparent 3px),
+    linear-gradient(120deg, rgba(226, 42, 44, .34) 0%, rgba(255, 250, 240, .16) 42%, rgba(92, 225, 255, .10) 76%, rgba(240, 198, 104, .26) 100%);
+  box-shadow:
+    0 7px 16px rgba(16, 5, 8, .32),
+    0 0 12px rgba(92, 225, 255, .14),
+    inset 0 0 0 1px rgba(255, 234, 170, .62),
+    inset 0 1px 0 rgba(255, 252, 238, .44),
+    inset -2px 0 0 rgba(126, 232, 255, .62);
+}
+body.jarvis #stack .row.set:hover {
+  transform: none;
+  background:
+    linear-gradient(90deg, #F5D688 0 2.5px, transparent 2.5px),
+    linear-gradient(122deg, rgba(222, 38, 40, .28) 0%, rgba(255, 250, 240, .14) 40%, rgba(255, 255, 255, .09) 72%, rgba(238, 196, 102, .22) 100%);
+  box-shadow:
+    0 5px 13px rgba(16, 5, 8, .28),
+    inset 0 0 0 1px rgba(252, 228, 160, .44),
+    inset 0 1px 0 rgba(255, 250, 232, .36);
+}
+body.jarvis #stack .row.tour.can:hover {
+  transform: translateY(-1px) scale(1.012);
+  background:
+    linear-gradient(90deg, #FFF1C2 0 3px, transparent 3px),
+    linear-gradient(120deg, rgba(226, 42, 44, .34) 0%, rgba(255, 250, 240, .16) 42%, rgba(92, 225, 255, .11) 76%, rgba(240, 198, 104, .26) 100%);
+}
+body.jarvis #stack .row.set.sp { border-radius: 9px 15px 9px 15px; }
+body.jarvis #stack.fresh .row { animation: im-drop .4s var(--im-ease) both; animation-delay: calc(var(--i, 0) * 36ms); }
+@keyframes im-drop { from { opacity: 0; transform: translateY(-10px) scale(.96); } }
+
+body.jarvis #stack .row.empty,
+body.jarvis #stack .row.actions,
+body.jarvis #stack .row.set.info {
+  background: transparent; box-shadow: none; color: rgba(248, 238, 220, .80);
+}
+body.jarvis #stack .row.empty:hover,
+body.jarvis #stack .row.actions:hover,
+body.jarvis #stack .row.set.info:hover {
+  background: transparent; box-shadow: none; transform: none;
+}
+
+/* Selected / pinned / highlighted rows */
+body.jarvis #stack .row.pinned,
+body.jarvis #stack .row.loc.cur,
+body.jarvis #stack .row.vault.sel {
+  background:
+    linear-gradient(90deg, #FFF1C2 0 3px, transparent 3px),
+    linear-gradient(122deg, rgba(214, 32, 36, .34), rgba(232, 190, 98, .22) 60%, rgba(82, 218, 252, .16));
+  box-shadow:
+    0 5px 14px rgba(16, 5, 8, .30),
+    inset 0 0 0 1px rgba(255, 236, 174, .68),
+    inset 0 1px 0 rgba(255, 252, 238, .42),
+    inset -2px 0 0 rgba(126, 232, 255, .72);
+}
+body.jarvis #stack .row.set.upd {
+  background: linear-gradient(122deg, rgba(196, 26, 32, .34), rgba(42, 118, 148, .36));
+  box-shadow: 0 5px 14px rgba(16, 5, 8, .3), inset 0 0 0 1.2px rgba(138, 236, 255, .72), inset 0 1px 0 rgba(255, 255, 255, .36);
+}
+
+/* Card typography & secondary labels */
+body.jarvis #stack .row .lbl,
+body.jarvis #stack .row .mqbox b,
+body.jarvis #stack .row.set.sp .lbl b { color: #FFFFFF; }
+body.jarvis #stack .row .mqbox,
+body.jarvis #stack .row.clip .mqbox { color: #F7F9FC; }
+body.jarvis #stack .row .dim,
+body.jarvis #stack .row .app,
+body.jarvis #stack .row .tm,
+body.jarvis #stack .row .who { color: rgba(246, 236, 218, .76); }
+body.jarvis #stack .row .swn { color: #FFE8A8; font-weight: 600; }
+body.jarvis #stack .row.note.done .mqbox { color: rgba(236, 228, 216, .52); }
+
+/* 3D Crimson-Gold Icon Badges, Holographic Data Chips & Controls */
+body.jarvis #stack .row .ic:not(.plain),
+body.jarvis #stack .row.vault .ic {
+  border-radius: 6px 8px 6px 8px;
+  background: linear-gradient(142deg, #EC3832 0%, #B3141B 54%, #E4B85A 100%);
+  color: #FFFFFF;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, .3), inset 0 0 0 1px rgba(255, 240, 192, .62), inset 0 1px 0 rgba(255, 255, 255, .42);
+}
+body.jarvis #stack .row .ic.plain { color: #FAE4A8; }
+body.jarvis #stack .row.tour .ic.plain {
+  border-radius: 8px;
+  color: #FFF4D2;
+  background: linear-gradient(142deg, rgba(214, 32, 36, .52), rgba(226, 180, 82, .38));
+  box-shadow: inset 0 0 0 1px rgba(255, 234, 170, .52), inset 0 1px 0 rgba(255, 250, 232, .35);
+}
+body.jarvis #stack .row.set.upd .ic.plain {
+  border-radius: 8px;
+  color: #E2FAFF;
+  background: rgba(92, 225, 255, .24);
+  box-shadow: inset 0 0 0 1px rgba(142, 236, 255, .62);
+}
+body.jarvis #stack .row .pin { color: rgba(248, 232, 196, .55); border-radius: 6px; }
+body.jarvis #stack .row.pinned .pin { color: #FFE8A6; }
+body.jarvis #stack .row .pin:hover,
+body.jarvis #stack .row .act:hover,
+body.jarvis #stack .row .x:hover {
+  border-radius: 6px;
+  color: #FFFFFF;
+  background: linear-gradient(142deg, rgba(214, 32, 36, .65), rgba(222, 172, 68, .48));
+  box-shadow: inset 0 0 0 1px rgba(255, 236, 174, .65);
+}
+body.jarvis #stack .row .act { color: rgba(248, 240, 226, .74); border-radius: 6px; }
+body.jarvis #stack .row .act.ok {
+  color: #E8FCFF; background: rgba(92, 225, 255, .26);
+  box-shadow: inset 0 0 0 1px rgba(142, 236, 255, .6);
+}
+body.jarvis #stack .row.vault .x.sure { background: #C4161C; color: #FFFFFF; box-shadow: inset 0 0 0 1px #FFE8A6; }
+
+body.jarvis #stack .row .chip {
+  border-radius: 6px;
+  background: rgba(92, 225, 255, .18);
+  color: #E2FAFF;
+  box-shadow: inset 0 0 0 1px rgba(142, 236, 255, .44);
+}
+body.jarvis #stack .row .chip.off {
+  background: rgba(255, 248, 232, .10);
+  color: rgba(242, 232, 216, .65);
+  box-shadow: inset 0 0 0 1px rgba(255, 240, 200, .18);
+}
+body.jarvis #stack .row .keys {
+  border-radius: 5px;
+  background: rgba(232, 190, 98, .20);
+  color: #FFF0C2;
+  box-shadow: inset 0 0 0 1px rgba(252, 224, 152, .42);
+}
+body.jarvis #stack .cc {
+  border-radius: 6px;
+  background: rgba(232, 190, 98, .18);
+  color: #FFF0C2;
+  box-shadow: inset 0 0 0 1px rgba(252, 224, 152, .38);
+}
+
+/* 3D Crimson-Gold Armored Switches & Segmented Controls */
+body.jarvis #stack .sw {
+  border-radius: 7px;
+  background: rgba(26, 16, 22, .56);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .4), inset 0 0 0 1px rgba(232, 208, 162, .30);
+}
+body.jarvis #stack .sw::after {
+  border-radius: 5px;
+  background: linear-gradient(180deg, #F6F9FC, #B8C4D4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .38);
+}
+body.jarvis #stack .sw.on {
+  background: linear-gradient(92deg, #C4161C 0%, #E62E2D 48%, #ECC265 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 240, 192, .72), inset 0 1px 0 rgba(255, 252, 236, .42), 0 0 10px rgba(226, 46, 44, .24);
+}
+body.jarvis #stack .sw.on::after {
+  background: linear-gradient(180deg, #FFFFFF, #DCF8FF);
+  box-shadow: 0 0 7px rgba(112, 230, 255, .68), 0 1px 3px rgba(0, 0, 0, .35);
+}
+body.jarvis #stack .sw.big { border-radius: 10px; }
+body.jarvis #stack .sw.big::after { border-radius: 7px; }
+
+body.jarvis #stack .seg {
+  border-radius: 7px;
+  background: rgba(26, 16, 22, .52);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .34), inset 0 0 0 1px rgba(246, 214, 134, .28);
+}
+body.jarvis #stack .seg button {
+  border-radius: 5.5px;
+  color: rgba(248, 240, 226, .80);
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+body.jarvis #stack .seg button:hover { color: #FFFFFF; }
+body.jarvis #stack .seg button.on {
+  color: #FFFFFF; font-weight: 620;
+  background: linear-gradient(140deg, #E22E2B 0%, #B3141B 52%, #DDA846 100%);
+  box-shadow: 0 2px 6px rgba(28, 6, 10, .36), inset 0 0 0 1px rgba(255, 238, 182, .72), inset 0 1px 0 rgba(255, 252, 238, .48);
+}
+
+body.jarvis #stack .sws button { box-shadow: inset 0 0 0 1px rgba(255, 244, 214, .34), 0 1px 3px rgba(0, 0, 0, .28); }
+body.jarvis #stack .sws button.on {
+  box-shadow: 0 0 0 1.5px #381014, 0 0 0 3px #FFE8A6, 0 0 8px rgba(232, 190, 98, .5);
+}
+
+/* Primary & Secondary 3D Armored Action Buttons + Vault Search Bar */
+body.jarvis #stack .row.set .go,
+body.jarvis #stack-clear,
+body.jarvis #stack-head .pillbtn,
+body.jarvis #stack .row.actions button {
+  border-radius: 6px 9px 6px 9px;
+  color: #FFFFFF; font-weight: 600;
+  background: linear-gradient(142deg, #DC2A26 0%, #A81319 52%, #D49E3E 100%);
+  box-shadow:
+    0 3px 9px rgba(20, 6, 10, .34),
+    inset 0 0 0 1px rgba(255, 236, 174, .64),
+    inset 0 1px 0 rgba(255, 252, 238, .46),
+    inset 0 -1px 1.5px rgba(58, 8, 12, .45);
+  transition: background .16s var(--im-ease), box-shadow .16s, transform .18s var(--im-ease);
+}
+body.jarvis #stack .row.set .go:hover,
+body.jarvis #stack-clear:hover,
+body.jarvis #stack-head .pillbtn:hover,
+body.jarvis #stack .row.actions button:hover {
+  color: #FFFFFF;
+  background: linear-gradient(142deg, #EE3C36 0%, #C4181F 48%, #ECC265 100%);
+  box-shadow:
+    0 4px 12px rgba(20, 6, 10, .40),
+    0 0 10px rgba(92, 225, 255, .28),
+    inset 0 0 0 1px rgba(198, 246, 255, .85),
+    inset 0 1px 0 rgba(255, 255, 255, .62);
+  transform: translateY(-1px) scale(1.03);
+}
+body.jarvis #stack .row.set .go:active,
+body.jarvis #stack-clear:active,
+body.jarvis #stack-head .pillbtn:active,
+body.jarvis #stack .row.actions button:active { transform: scale(.94); }
+
+body.jarvis #stack-head .search {
+  border-radius: 7px 11px 7px 11px;
+  color: rgba(248, 238, 220, .74);
+  background: rgba(28, 18, 24, .58);
+  box-shadow:
+    0 3px 10px rgba(16, 5, 8, .26),
+    inset 0 0 0 1px rgba(248, 218, 144, .36),
+    inset 0 1px 0 rgba(255, 248, 224, .22);
+}
+body.jarvis #stack-head .search:focus-within {
+  color: #9CEEFF;
+  background: rgba(28, 20, 28, .72);
+  box-shadow:
+    0 4px 12px rgba(16, 5, 8, .32),
+    inset 0 0 0 1.4px rgba(126, 232, 255, .78),
+    0 0 12px rgba(92, 225, 255, .22);
+}
+body.jarvis #stack-head input { color: #FFFFFF; caret-color: #7EE8FF; }
+body.jarvis #stack-head input::placeholder { color: rgba(244, 232, 212, .52); }
+
+body.jarvis #stack .ib.small {
+  border-radius: 5px 7px 5px 7px;
+  color: #FFFFFF;
+  background: rgba(255, 246, 224, .12);
+  box-shadow: inset 0 0 0 1px rgba(248, 218, 144, .34), inset 0 1px 0 rgba(255, 250, 232, .28);
+}
+body.jarvis #stack .ib.small:hover {
+  background: linear-gradient(142deg, rgba(218, 34, 38, .72), rgba(226, 178, 76, .56));
+  box-shadow: inset 0 0 0 1px rgba(255, 238, 182, .78);
+}
+body.jarvis #stack .row .thumb {
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .3), inset 0 0 0 1px rgba(248, 218, 144, .4);
+}
+body.jarvis #g-sym.off { color: rgba(242, 232, 216, .45); opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  body.jarvis [data-view="tools"].on .ib,
+  body.jarvis #stack.fresh .row { animation: none; }
+  body.jarvis #stack { transition: opacity .15s; transform: none; }
 }
