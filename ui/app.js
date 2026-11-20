@@ -148,9 +148,12 @@ function render() {
   // the password list and a fresh password stay until the user closes them: they are used together with another window
   if (st.stackOpen && st.stackKind !== 'vault' && away && now - st.leftAt > 650) setStack(false);
   if (away && !st.stackOpen && now - st.leftAt > 380 && st.manual !== 'gen') st.manual = null;
-  const viz = st.media.playing && musicOn() && st.visuals;
-  if (viz !== st.vizOn) { st.vizOn = viz; window.qazi.setViz(viz); }
+  const wasTucked = st.tucked;
   updateTuck();
+  if (wasTucked !== st.tucked) wakePaint();
+  // Do not keep capturing and analysing audio for an invisible overlay.
+  const viz = st.media.playing && musicOn() && st.visuals && !st.tucked;
+  if (viz !== st.vizOn) { st.vizOn = viz; window.qazi.setViz(viz); wakePaint(); }
   if (!st.tucked && st.cx !== undefined) hoverNow();      // the pill may have grown or shrunk under a resting cursor
   island.classList.toggle('dropping', dragging());
   if (st.tucked) {
@@ -162,6 +165,7 @@ function render() {
     views[cur].classList.remove('on');
     views[v].classList.add('on');
     cur = v;
+    wakePaint();
   }
   const w = clamp(Math.ceil(views[cur].offsetWidth), 70, 600);
   if (island.dataset.w !== String(w)) {
@@ -169,12 +173,13 @@ function render() {
     if (prevW >= 68 && w - prevW >= 38) triggerPillShoot(prevW, w);
     if (prevW >= 68 && Math.abs(w - prevW) >= 34) triggerIronPill(prevW, w, w > prevW ? 'open' : 'close');
     island.dataset.w = w;
+    wakePaint();
     island.style.width = w + 'px';
     glow.style.width = w + 50 + 'px'; glow.style.marginLeft = -(w + 50) / 2 + 'px';
     if (sideN) placeSide();
   }
 }
-setInterval(render, 70);
+setInterval(render, 120);
 
 // ------------------------------------------------------------ cursor: hover + click-through
 window.qazi.onCursor(({ x, y }) => { st.cx = x; st.cy = y; evalHover(x, y); });
@@ -487,6 +492,7 @@ function setStack(open, kind) {
   if (open && kind === 'vault') { st.vaultQ = ''; st.vaultSel = 0; stackHead.dataset.kind = ''; }
   const prevRect = !open ? stackEl.getBoundingClientRect() : null;
   st.stackOpen = open;
+  wakePaint();
   if (open) st.stackKind = kind;
   stackEl.classList.toggle('open', open);
   $('#t-inbox').classList.toggle('active', open && st.stackKind === 'notifs');
@@ -1161,7 +1167,7 @@ function drawIce(t, dt, on, live) {
 // ------------------------------------------------------------ Spider-Man: suit weave, 3D silk webs, hanging spider & web-shoot
 const FX_W = 700, FX_SP_H = 360;
 let spPat = null, spDot = null, spOn = false, spExp = 0, spMx = 0, spMy = 0, spMa = 0, spPulse = 0, spBeatAt = 0;
-let spCurX = -999, spCurY = -999, spCvx = 0, spCvy = 0, spCurAt = 0, spCssAt = 0, spPrevW = 84;
+let spCurX = -999, spCurY = -999, spCvx = 0, spCvy = 0, spCurAt = 0, spCssAt = 0;
 const spStrands = Array.from({ length: 5 }, () => ({ x: 0, y: 0, vx: 0, vy: 0 }));
 const spBug = { ax: 382, ay: 43.4, th: 0.04, om: 0, len: 24, to: 25, reel: 0, at: 0, leg: 0, legA: 0, ready: false };
 const spShoot = { at: -9999, fromW: 84, toW: 360, dur: 520 };
@@ -1651,7 +1657,7 @@ function sizeSpFx(on) {
   fx.width = Math.round(FX_W * dpr); fx.height = Math.round(h * dpr);
   fxG.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-window.addEventListener('resize', () => { if (spOn) sizeSpFx(true); });
+window.addEventListener('resize', () => { if (spOn) { sizeSpFx(true); wakePaint(); } });
 
 function drawSpider(t, dt, on, live) {
   if (!on) {
@@ -1664,7 +1670,6 @@ function drawSpider(t, dt, on, live) {
   if (!spOn) { spOn = true; sizeSpFx(true); }
   const g = fxG, W = Math.max(70, island.offsetWidth || island.clientWidth), cx = FX_W * 0.5;
   const x0 = cx - W * 0.5, x1 = cx + W * 0.5;
-  spPrevW = W;
   g.clearRect(0, 0, FX_W, FX_SP_H);
   g.save();
   g.globalAlpha = clamp((skyA - 0.45) / 0.5, 0, 1);
@@ -1820,15 +1825,6 @@ function drawSpider(t, dt, on, live) {
   drawStackWebShoot(g, now, cx, W);
   g.restore();
 }
-const spBusy = (t) => spOn && (
-  t - spShoot.at < spShoot.dur ||
-  t - spStackShoot.at < spStackShoot.dur ||
-  t - spCurAt < 450 ||
-  Math.abs(spPrevW - island.offsetWidth) > 0.5 ||
-  (spExp > 0.01 && spExp < 0.99) ||
-  Math.abs(spBug.om) > 0.08
-);
-
 // ============================================================ Iron Man / Stark Atelier 3D skin
 // Sculpted 3D candy-apple crimson & satin 18K champagne-gold Mark-series armor plating, brushed
 // silver-titanium slide rails & micro-hinges, volumetric 3-plane holographic Arc Reactor,
@@ -1842,9 +1838,9 @@ function sizeImFx(on) {
   fx.height = Math.round((on ? FX_IM_H : 110) * dpr);
   fxG.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-window.addEventListener('resize', () => { if (imOn) sizeImFx(true); });
-let imOn = false, imExp = 0, imPrevW = 0;
-let imCurX = FX_W / 2, imCurY = -999, imCurAt = -9999, imCurIn = false, imCurIpc = false;
+window.addEventListener('resize', () => { if (imOn) { sizeImFx(true); wakePaint(); } });
+let imOn = false, imExp = 0;
+let imCurX = FX_W / 2, imCurY = -999, imCurIn = false;
 let imEye = 0, imLx = 0, imLy = 0, imMx = 0, imMy = 0, imMa = 0;
 let imBrushPat = null, imHexPat = null;
 const imPillTr = { at: -9999, dur: 820, fromW: 98, toW: 98, dir: 'open' };
@@ -1978,18 +1974,20 @@ function updateIronInput(t, dt) {
   if (imMa < 0.003 && wantMa === 0) imMa = 0;
 
   const bs = document.body.style;
-  bs.setProperty('--im-eye', imEye.toFixed(3));
-  bs.setProperty('--im-lx', imLx.toFixed(2) + 'px');
-  bs.setProperty('--im-ly', imLy.toFixed(2) + 'px');
-  bs.setProperty('--im-fx', (50 + imLx * 7.5).toFixed(1) + '%');
-  bs.setProperty('--im-fy', (48 + imLy * 11).toFixed(1) + '%');
-  bs.setProperty('--im-mx', (50 + imMx * 38).toFixed(1) + '%');
-  bs.setProperty('--im-my', (28 + imMy * 24).toFixed(1) + '%');
-  bs.setProperty('--im-ma', imMa.toFixed(3));
-  bs.setProperty('--im-sx', (50 + imMx * 32).toFixed(1) + '%');
-  bs.setProperty('--im-sy', (18 + imMy * 22).toFixed(1) + '%');
-  bs.setProperty('--im-px', (-imMx * 2.4).toFixed(2) + 'px');
-  bs.setProperty('--im-py', (-imMy * 1.6).toFixed(2) + 'px');
+  // Avoid invalidating the whole document when the rounded visual values are unchanged.
+  const css = (key, value) => { if (bs.getPropertyValue(key) !== value) bs.setProperty(key, value); };
+  css('--im-eye', imEye.toFixed(3));
+  css('--im-lx', imLx.toFixed(2) + 'px');
+  css('--im-ly', imLy.toFixed(2) + 'px');
+  css('--im-fx', (50 + imLx * 7.5).toFixed(1) + '%');
+  css('--im-fy', (48 + imLy * 11).toFixed(1) + '%');
+  css('--im-mx', (50 + imMx * 38).toFixed(1) + '%');
+  css('--im-my', (28 + imMy * 24).toFixed(1) + '%');
+  css('--im-ma', imMa.toFixed(3));
+  css('--im-sx', (50 + imMx * 32).toFixed(1) + '%');
+  css('--im-sy', (18 + imMy * 22).toFixed(1) + '%');
+  css('--im-px', (-imMx * 2.4).toFixed(2) + 'px');
+  css('--im-py', (-imMy * 1.6).toFixed(2) + 'px');
 }
 
 // #sky painter: 3D sculpted candy-apple crimson & brushed 18K champagne-gold Mark-series armor
@@ -3041,7 +3039,6 @@ function drawIronMan(t, dt, on, live) {
   g.clearRect(0, 0, FX_W, FX_IM_H);
 
   const cx = FX_W / 2, W = island.clientWidth || 98, halfW = W * 0.5;
-  imPrevW = W;
   const now = performance.now();
   const sec = reducedMotion ? 0 : t * 0.001;
   const audioPulse = live && st.react ? clamp(bass * 0.7 + energy * 0.4, 0, 1) : 0;
@@ -3259,15 +3256,6 @@ function drawIronMan(t, dt, on, live) {
   }
 }
 
-const imBusy = (t) => imOn && (
-  t - imPillTr.at < imPillTr.dur ||
-  t - imStackTr.at < imStackTr.dur ||
-  t - imCurAt < 650 ||
-  imEye > 0.004 ||
-  Math.abs(imPrevW - island.offsetWidth) > 0.5 ||
-  (imExp > 0.01 && imExp < 0.99)
-);
-
 // whichever of these the current skin needs; the rest are switched off first so two never share the canvas
 let aura = null;
 function drawAura(t, dt, live) {
@@ -3299,9 +3287,8 @@ function drawLook(t, dt, live) {
   g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
 }
 const barsC = $('#bars'), barsG = barsC.getContext('2d');
-let idleFrames = 0, lastT = 0, lastPaint = 0;
+let idleFrames = 0, lastT = 0;
 function frame(t) {
-  requestAnimationFrame(frame);
   const playing = st.media.playing && musicOn();
   const look = st.skin !== 'black' ? st.skin : playing && st.visuals && st.react ? 'sky' : null;      // one theme for everything; plain black gets the night sky while music plays
   document.body.classList.toggle('jarvis', look === 'jarvis');
@@ -3316,18 +3303,18 @@ function frame(t) {
   skyA += ((look ? 1 : 0) - skyA) * 0.07;
   island.classList.toggle('sky', skyA > 0.4);
   paintSeek();
+  // Tucked overlays are hidden. Clear their external effects once and stop painting,
+  // even if a player is running in the background.
+  if (st.tucked) { drawAura(t, 0, false); glow.style.opacity = 0; lastT = t; return; }
   if (!playing && energy < 0.004) {
     if (skyA < 0.01) {
       if (idleFrames++ === 2) { drawAura(t, 0, false); glow.style.opacity = 0; skyG.clearRect(0, 0, SKY_W, SKY_H); barsG.clearRect(0, 0, barsC.width, barsC.height); }
       lastT = t;
       return;
     }
-    if (st.tucked) { drawAura(t, 0, false); return; }
-    const step = look === 'spider' ? (spBusy(t) ? 14 : 30) : look === 'jarvis' ? (imBusy(t) ? 14 : 26) : (aura ? 24 : 45);
-    if (t - lastPaint < step) return;       // resting skins stay featherlight; Spider-Man & Iron Man wake to 60fps on transitions or hover
   }
   idleFrames = 0;
-  const dt = Math.min(0.05, (t - lastT) / 1000); lastT = t; lastPaint = t;
+  const dt = Math.min(0.05, (t - lastT) / 1000); lastT = t;
   sampleLevels(t, playing);
 
   const glowOn = look === 'spider'
@@ -3361,7 +3348,29 @@ function frame(t) {
     }
   }
 }
-requestAnimationFrame(frame);
+// One shared scheduler: no perpetual requestAnimationFrame while black, tucked, or
+// the Iron Man eye-bridge is settled. Input wakes it immediately; animated themes
+// run at a modest idle rate and transition/interaction bursts get full refresh.
+let paintTimer = 0, paintRaf = 0, paintAwakeUntil = 0;
+function wakePaint(ms = 1800) {
+  paintAwakeUntil = Math.max(paintAwakeUntil, performance.now() + ms);
+  if (paintTimer) { clearTimeout(paintTimer); paintTimer = 0; }
+  if (!paintRaf) paintRaf = requestAnimationFrame(paintLoop);
+}
+function paintLoop(t) {
+  paintRaf = 0;
+  frame(t);
+  if (st.tucked) return;
+  const active = t < paintAwakeUntil;
+  const playing = st.media.playing && musicOn();
+  if (!active && !playing && (lookNow === null || (lookNow === 'jarvis' && cur === 'idle'))) return;
+  // The animated skins are deliberately calmer at rest. Music stays responsive,
+  // while the expensive 3D effects no longer repaint 40-60 times a second.
+  const delay = active ? 0 : playing ? 33 : 80;
+  if (delay) paintTimer = setTimeout(() => { paintTimer = 0; paintRaf = requestAnimationFrame(paintLoop); }, delay);
+  else paintRaf = requestAnimationFrame(paintLoop);
+}
+wakePaint();
 
 // ------------------------------------------------------------ track position + scrubbing
 // A hairline along the bottom of the pill shows where the track is. Bring the cursor to that edge and it
@@ -3386,11 +3395,13 @@ seekEl.addEventListener('pointerdown', (e) => {
   st.scrubbing = true; seekEl.classList.add('scrub');
   artistText = $('#m-artist').textContent;
   scrubRatio = ratioAt(e);
+  wakePaint();
   $('#m-artist').textContent = fmtT(scrubRatio * st.media.dur) + ' / ' + fmtT(st.media.dur);
 });
 seekEl.addEventListener('pointermove', (e) => {
   if (!st.scrubbing) return;
   scrubRatio = ratioAt(e);
+  wakePaint();
   $('#m-artist').textContent = fmtT(scrubRatio * st.media.dur) + ' / ' + fmtT(st.media.dur);
 });
 function endScrub(apply) {
@@ -3436,19 +3447,22 @@ function tick() {
     beep(); showNotif({ app: 'Timer', title: 'Time is up', body: '' });
   }
   const it = $('#i-time');
-  it.textContent = timer.running ? mmss(left) : hm;
+  const idleTime = timer.running ? mmss(left) : hm;
+  if (it.textContent !== idleTime) it.textContent = idleTime;
   it.classList.toggle('count', timer.running);
   views.idle.classList.toggle('faceon', st.face === 'eyes' && !timer.running);
-  $('#t-time').textContent = hm;
+  if ($('#t-time').textContent !== hm) $('#t-time').textContent = hm;
   const dt = dateText(d), td = $('#t-date');
   if (td.textContent !== dt) td.textContent = dt;
-  $('#tm-time').textContent = mmss(left);
+  const timerText = mmss(left);
+  if ($('#tm-time').textContent !== timerText) $('#tm-time').textContent = timerText;
   $('#tm-time').classList.toggle('done', timer.done);
-  $('#m-timer').textContent = timer.running ? mmss(left) : '';
+  const mediaTimer = timer.running ? timerText : '';
+  if ($('#m-timer').textContent !== mediaTimer) $('#m-timer').textContent = mediaTimer;
   views.media.classList.toggle('timing', timer.running);
   setIcon($('#tm-start'), timer.running ? 'pause' : 'play');
 }
-setInterval(tick, 200);
+setInterval(tick, 500);
 
 if (navigator.getBattery) {
   navigator.getBattery().then((b) => {
@@ -4091,15 +4105,20 @@ const blink = () => emote('blink', 130);
   setTimeout(faceLoop, 1700 + Math.random() * 3600);
 })();
 // the eyes follow the cursor a little when it comes near
-const feedIronCursor = (x, y, inside, fromIpc) => {
+const feedIronCursor = (x, y, inside) => {
+  // Cursor messages also arrive while the pointer is far below the island. Those
+  // cannot affect the closed visor and must not restart its expensive renderer.
+  const dx = Math.max(0, Math.abs(x - FX_W / 2) - (island.clientWidth || 98) / 2);
+  const dy = Math.max(0, 8 - y, y - 44);
+  const relevant = inside && (cur !== 'idle' || Math.hypot(dx, dy) < 340);
+  const wasRelevant = imCurIn;
   imCurX = x; imCurY = y;
-  imCurIn = inside;
-  imCurIpc = !!fromIpc;
-  if (inside) imCurAt = performance.now();
+  imCurIn = relevant;
+  if (relevant || wasRelevant) wakePaint();
 };
-window.addEventListener('pointermove', (e) => { if (imOn) feedIronCursor(e.clientX, e.clientY, true, false); }, { passive: true });
-window.addEventListener('pointerleave', () => { if (imOn) { imCurIn = false; imCurAt = performance.now(); } }, { passive: true });
-window.qazi.onCursor(({ x, y, hold }) => {
+window.addEventListener('pointermove', (e) => { if (imOn) feedIronCursor(e.clientX, e.clientY, true); }, { passive: true });
+window.addEventListener('pointerleave', () => { if (imOn && imCurIn) { imCurIn = false; wakePaint(); } }, { passive: true });
+window.qazi.onCursor(({ x, y }) => {
   const dx = x - window.innerWidth / 2, dy = y - 26, d = Math.hypot(dx, dy);
   const k = d < 420 && d > 1 ? Math.min(1, d / 120) : 0;
   face.style.setProperty('--lx', (k ? dx / d * 2.4 * k : 0).toFixed(2) + 'px');
@@ -4111,7 +4130,7 @@ window.qazi.onCursor(({ x, y, hold }) => {
   }
   if (imOn) {
     const inside = Number.isFinite(x) && Number.isFinite(y) && x > -85 && x < FX_W + 85 && y > -85 && y < 515;
-    feedIronCursor(x, y, inside, !hold);
+    feedIronCursor(x, y, inside);
   }
 });
 
@@ -4119,6 +4138,7 @@ window.qazi.onCursor(({ x, y, hold }) => {
 let hinted = false, toured = false;
 const applySettings = (s) => {
   if (!s) return;
+  wakePaint();
   st.autoHide = s.autoHide !== false;
   st.hideVideo = s.hideVideo !== false;
   st.notifMs = clamp(Number(s.notifSeconds) || 4, 2, 15) * 1000;

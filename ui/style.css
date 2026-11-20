@@ -1139,6 +1139,9 @@ body.jarvis #island {
     background .32s var(--im-ease);
 }
 body.jarvis.im-idle #island {
+  /* The collapsed shell is opaque; sampling and blurring the desktop here wastes GPU/CPU. */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border-radius: 7px 7px 12px 12px;
   background: linear-gradient(172deg, #D92626 0%, #B3141B 42%, #820C13 100%);
   box-shadow:

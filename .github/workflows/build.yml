@@ -23,6 +23,11 @@ jobs:
         with:
           workspaces: src-tauri
 
+      - name: Test renderer scheduling
+        run: |
+          npm ci --prefix tests
+          npm --prefix tests test
+
       - name: Build
         working-directory: src-tauri
         run: cargo build --release --locked

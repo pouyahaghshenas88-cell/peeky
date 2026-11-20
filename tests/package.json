@@ -1,0 +1,10 @@
+{
+  "name": "peeky-renderer-tests",
+  "private": true,
+  "scripts": { "test": "node --test renderer.test.cjs" },
+  "devDependencies": {
+    "@napi-rs/canvas": "0.1.80",
+    "@sinonjs/fake-timers": "13.0.5",
+    "jsdom": "24.1.3"
+  }
+}
