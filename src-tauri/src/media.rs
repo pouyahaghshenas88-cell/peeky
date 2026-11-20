@@ -59,22 +59,29 @@ pub struct Media {
     mgr: Option<GlobalSystemMediaTransportControlsSessionManager>,
     last_key: String,
     none_sent: bool,
+    next_request: Instant,
 }
 
 impl Media {
     pub fn new() -> Self {
-        Self { mgr: None, last_key: String::new(), none_sent: false }
+        Self { mgr: None, last_key: String::new(), none_sent: false, next_request: Instant::now() }
     }
 
     fn session(&mut self) -> Option<GlobalSystemMediaTransportControlsSession> {
         if self.mgr.is_none() {
+            if Instant::now() < self.next_request { return None; }
             self.mgr = wait(GlobalSystemMediaTransportControlsSessionManager::RequestAsync(), 4000);
+            // A missing or unavailable media service should not be recreated twice a second.
+            if self.mgr.is_none() { self.next_request = Instant::now() + Duration::from_secs(5); }
         }
         match self.mgr.as_ref()?.GetCurrentSession() {
             Ok(s) => Some(s),
             Err(e) => {
-                if e.code().0 != 0 {
-                    self.mgr = None; // the manager itself went away: ask for a new one next time
+                // A null current session is E_POINTER, not a broken manager. Keep it so
+                // an idle desktop does not repeatedly create the WinRT media service.
+                if e.code().0 != 0 && e.code().0 != 0x80004003u32 as i32 {
+                    self.mgr = None;
+                    self.next_request = Instant::now() + Duration::from_secs(5);
                 }
                 None
             }

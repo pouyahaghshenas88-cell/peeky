@@ -208,7 +208,7 @@ pub fn start() {
             if every("vol", 400) {
                 volume(false, &mut last_vol);
             }
-            if every("telegram", 500) {
+            if every("telegram", 1200) {
                 notifs.poll_telegram();
             }
             if every("cover", 300) {

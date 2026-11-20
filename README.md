@@ -64,7 +64,7 @@ cargo build --release
 ```
 
 The result is a single `peeky.exe` (about 5 MB). The installer is `installer/island.nsi` (NSIS).
-Every push is built by [GitHub Actions](.github/workflows/build.yml); a tag `vX.Y.Z` publishes a release.
+Every push is built by [GitHub Actions](.github/workflows/build.yml); a tag `vX.Y.Z` publishes a release. See [performance testing](docs/performance.md) for measuring CPU and memory across Peeky and WebView2.
 
 ## Platforms
 

@@ -111,11 +111,12 @@ pub fn start() {
         let h = sys::hwnd();
         let vk = if GetSystemMetrics(SM_SWAPBUTTON) != 0 { VK_RBUTTON } else { VK_LBUTTON };
         let (mut last, mut last_emit, mut was_near) = ((i32::MIN, i32::MIN), Instant::now(), false);
-        let (mut down, mut ours, mut tick, mut said_at) = (false, false, 0u64, 0u64);
+        let (mut down, mut ours, mut said_at) = (false, false, 0u64);
+        let (mut last_topmost, mut last_place) = (Instant::now(), Instant::now());
         place(h);
         loop {
-            std::thread::sleep(Duration::from_millis(16));
-            tick += 1;
+            // Away from the overlay, halve wakeups; restore the fast cadence near it.
+            std::thread::sleep(Duration::from_millis(if was_near || down || INTERACTIVE.load(SeqCst) { 16 } else { 32 }));
             if !IsWindow(Some(h)).as_bool() {
                 break;
             }
@@ -127,10 +128,12 @@ pub fn start() {
             }
             if !DRAGGING.load(SeqCst) {
                 apply_style(h);
-                if tick % 300 == 0 {
+                if last_topmost.elapsed() >= Duration::from_secs(5) {
+                    last_topmost = Instant::now();
                     let _ = SetWindowPos(h, Some(HWND_TOPMOST), 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
                 }
-                if tick % 120 == 0 {
+                if last_place.elapsed() >= Duration::from_secs(2) {
+                    last_place = Instant::now();
                     place(h);
                 }
             }

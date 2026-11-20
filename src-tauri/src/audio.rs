@@ -121,13 +121,14 @@ unsafe fn capture() -> windows::core::Result<()> {
     let mut smooth = vec![0f32; n / 2];
     let (mut re, mut im) = (vec![0f32; n], vec![0f32; n]);
     let mut last_packet = Instant::now();
+    let mut last_signal = Instant::now();
     let mut last_emit = Instant::now();
     let mut last_check = Instant::now();
     let mut quiet_since: Option<Instant> = None;
     let tau = 0.61f32; // AnalyserNode smoothing 0.72 per 60Hz frame, here per 25ms step
 
     while VIZ.load(SeqCst) {
-        std::thread::sleep(Duration::from_millis(10));
+        std::thread::sleep(Duration::from_millis(20));
         loop {
             let frames = cap.GetNextPacketSize()?;
             if frames == 0 {
@@ -136,6 +137,7 @@ unsafe fn capture() -> windows::core::Result<()> {
             let (mut data, mut got, mut flags) = (std::ptr::null_mut::<u8>(), 0u32, 0u32);
             cap.GetBuffer(&mut data, &mut got, &mut flags, None, None)?;
             let silent = flags & 2 != 0 || data.is_null();
+            let mut has_signal = false;
             for f in 0..got as usize {
                 let mut s = 0f32;
                 if !silent {
@@ -153,18 +155,31 @@ unsafe fn capture() -> windows::core::Result<()> {
                     }
                     s /= channels.max(1) as f32;
                 }
+                has_signal |= s.abs() > 1e-7;
                 ring[wpos] = s;
                 wpos = (wpos + 1) % n;
             }
             cap.ReleaseBuffer(got)?;
+            if has_signal { last_signal = Instant::now(); }
             last_packet = Instant::now();
         }
         if last_emit.elapsed() < Duration::from_millis(25) {
             continue;
         }
         last_emit = Instant::now();
-        // with nothing playing the device delivers no packets at all: that is silence, not "keep the last sound"
+        // Check the default device even after a long silence; otherwise a quiet stream
+        // can prevent switching to newly connected headphones.
+        if last_check.elapsed() > Duration::from_secs(2) {
+            last_check = Instant::now();
+            let now_id = enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia).and_then(|d| d.GetId()).map(|p| sys::pwstr_take(p)).unwrap_or_default();
+            if now_id != dev_id { break; }
+        }
+        // Once silence has settled, skip FFT and allocation entirely until packets resume.
         let stale = last_packet.elapsed() > Duration::from_millis(120);
+        if last_signal.elapsed() > Duration::from_millis(120)
+            && quiet_since.is_some_and(|t| t.elapsed() > Duration::from_millis(600)) {
+            continue;
+        }
         for i in 0..n {
             re[i] = if stale { 0.0 } else { ring[(wpos + i) % n] * window[i] };
             im[i] = 0.0;
@@ -204,15 +219,6 @@ unsafe fn capture() -> windows::core::Result<()> {
             quiet_since = None;
         }
         sys::emit("levels", levels.to_vec());
-
-        if last_check.elapsed() > Duration::from_secs(2) {
-            last_check = Instant::now();
-            // headphones plugged in / another output chosen: follow it
-            let now_id = enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia).and_then(|d| d.GetId()).map(|p| sys::pwstr_take(p)).unwrap_or_default();
-            if now_id != dev_id {
-                break;
-            }
-        }
     }
     let _ = client.Stop();
     Ok(())
